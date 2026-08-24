@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
-import { isSafeUrl } from '../utils/sanitize';
+import { isSafeUrl, sanitizeHtml, stripClipboardArtifacts } from '../utils/sanitize';
 import { 
   Bold,
   Italic, 
@@ -59,6 +59,8 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing your rep
       attributes: {
         class: 'rich-text-editor mx-auto focus:outline-none min-h-[300px] p-4 prose prose-sm max-w-none',
       },
+      transformPastedHTML: (html) => sanitizeHtml(html),
+      transformPastedText: (text) => stripClipboardArtifacts(text),
     },
   });
 

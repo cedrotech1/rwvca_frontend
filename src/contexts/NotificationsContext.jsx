@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
 import api from '../services/api';
 import { resolveNotificationLink } from '../utils/notificationLinks';
+import { toPlainText } from '../utils/sanitize';
 import { useAuth } from './AuthContext';
 
 const NotificationsContext = createContext();
@@ -8,6 +9,8 @@ const NotificationsContext = createContext();
 function mapNotification(row) {
   return {
     ...row,
+    title: toPlainText(row.title),
+    message: toPlainText(row.message),
     isRead: String(row.status).toLowerCase() === 'read',
     createdAt: row.created_at,
     href: resolveNotificationLink(row.link),

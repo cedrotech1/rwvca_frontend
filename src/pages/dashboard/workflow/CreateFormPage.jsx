@@ -5,6 +5,7 @@ import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { stripClipboardArtifacts } from '../../../utils/sanitize';
 import { useStaffOptions } from './helpers';
 
 export default function CreateFormPage({
@@ -108,6 +109,17 @@ export default function CreateFormPage({
                     className={`${inputClass} min-h-28`}
                     value={value}
                     onChange={(e) => setValue(field.name, e.target.value)}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData?.getData('text/plain') || '';
+                      const cleaned = stripClipboardArtifacts(pasted);
+                      if (cleaned === pasted) return;
+                      e.preventDefault();
+                      const el = e.currentTarget;
+                      const start = el.selectionStart ?? el.value.length;
+                      const end = el.selectionEnd ?? el.value.length;
+                      const next = `${el.value.slice(0, start)}${cleaned}${el.value.slice(end)}`;
+                      setValue(field.name, next);
+                    }}
                   />
                 ) : field.type === 'select' ? (
                   <select

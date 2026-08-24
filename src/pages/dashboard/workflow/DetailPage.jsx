@@ -9,25 +9,25 @@ import { useNotifications } from '../../../contexts/NotificationsContext';
 import { formatCell, formatDateTime, isStatusColumn } from './helpers';
 import WorkflowActions from './WorkflowActions';
 import { DetailPageSkeleton } from '../../../components/ui/Skeleton';
+import { sanitizeHtml, toPlainText } from '../../../utils/sanitize';
 
 function nested(row, key) {
   return String(key || '').split('.').reduce((value, part) => value?.[part], row);
 }
 
 function htmlToPlainText(value) {
-  return String(value || '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .trim();
+  return toPlainText(value);
 }
 
 function renderRichContent(value) {
   const html = String(value || '').trim();
   if (!html) return '—';
-  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(html);
-  if (!looksLikeHtml) return <div className="whitespace-pre-wrap">{html}</div>;
-  return <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: html }} />;
+  const cleaned = toPlainText(html);
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(html) && !/<!--\s*(Start|End)Fragment/i.test(html);
+  if (!looksLikeHtml) return <div className="whitespace-pre-wrap">{cleaned || '—'}</div>;
+  const safe = sanitizeHtml(html);
+  if (!safe) return <div className="whitespace-pre-wrap">{cleaned || '—'}</div>;
+  return <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: safe }} />;
 }
 
 function ReplyThread({ replies, onReply, activeReplyId, setActiveReplyId, replyDraft, setReplyDraft, saving, replyLabel = 'Reply' }) {
@@ -47,7 +47,7 @@ function ReplyThread({ replies, onReply, activeReplyId, setActiveReplyId, replyD
           {row.level > 0 ? 'Reply' : 'Original Reply'}
         </span>
       </div>
-      <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{row.reply_text || row.message}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{toPlainText(row.reply_text || row.message)}</p>
       <button
         type="button"
         className="mt-3 text-sm font-medium text-[#2f5d31]"

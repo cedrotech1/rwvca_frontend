@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
+import { toPlainText } from '../utils/sanitize';
 
 export const Notification = ({ type = 'success', message, onClose, duration = 3000 }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -35,7 +36,7 @@ export const Notification = ({ type = 'success', message, onClose, duration = 30
     >
       <div className="flex items-center">
         {icons[type]}
-        <span className="ml-3 text-sm font-medium">{message}</span>
+        <span className="ml-3 text-sm font-medium">{toPlainText(message)}</span>
       </div>
       <button
         onClick={() => {

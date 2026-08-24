@@ -1,5 +1,11 @@
 export function stripHtml(value = '') {
-  return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(value || '')
+    .replace(/<!--\s*StartFragment\s*-->/gi, '')
+    .replace(/<!--\s*EndFragment\s*-->/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function truncate(value = '', length = 100) {

@@ -7,7 +7,7 @@ import { isPublicPath } from '../utils/appPaths';
 import { renderMarkdown } from '../utils/markdown.js';
 
 function storageKeyFor(audience) {
-  return `igiti-chat-agent-id-${audience}`;
+  return `igiti-chat-agent-id-v2-${audience}`;
 }
 
 function readStoredAgent(audience) {
