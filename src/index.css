@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@import "./public.css";
+
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --color-wood: #6b4423;
+  --color-wood-dark: #472b1e;
+  --color-forest: #2f5d31;
+  --color-forest-deep: #003500;
+  --color-brand: #2f5d31;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+}
+
+.public-hero-gradient {
+  background: linear-gradient(
+    to right,
+    rgba(0, 53, 0, 0.95) 0%,
+    rgba(0, 95, 0, 0.34) 50%,
+    rgba(1, 75, 1, 0.3) 60%,
+    rgba(0, 255, 127, 0) 85%
+  );
+}
+
+.public-ad-gradient {
+  background: linear-gradient(
+    to right,
+    rgba(71, 43, 30, 0.9) 0%,
+    rgba(71, 43, 30, 0.7) 40%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
