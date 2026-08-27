@@ -4,7 +4,9 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessPath } from '../utils/rwvcaAccess';
+import { needsProfileCompletion } from '../utils/profileCompleteness';
 import { AccessDenied } from '../pages/AccessDenied';
+import { Navigate } from 'react-router-dom';
 
 const SIDEBAR_COLLAPSED_KEY = 'rwvca-sidebar-collapsed';
 
@@ -38,6 +40,14 @@ export const DashboardLayout = () => {
 
   const sidebarWidth = sidebarCollapsed ? 'lg:w-[4.5rem]' : 'lg:w-64';
   const mainOffset = sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-64';
+
+  const pendingProfile = needsProfileCompletion(user);
+  const path = location.pathname.replace(/\/$/, '') || '/dashboard';
+  const onProfilePage = path === '/dashboard/profile' || path.startsWith('/dashboard/profile/');
+
+  if (pendingProfile && !onProfilePage) {
+    return <Navigate to="/dashboard/profile" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -74,7 +84,9 @@ export const DashboardLayout = () => {
           />
         </div>
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-150 p-4 lg:p-6 mt-16">
-          {canAccessPath(user?.role, location.pathname, user) ? <Outlet /> : <AccessDenied />}
+          {canAccessPath(user?.role, location.pathname, user) || (pendingProfile && onProfilePage)
+            ? <Outlet />
+            : <AccessDenied />}
         </main>
       </div>
     </div>

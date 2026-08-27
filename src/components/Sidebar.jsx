@@ -37,6 +37,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { canSeeMenuCounts, getMenuForRole } from '../utils/rwvcaAccess';
+import { needsProfileCompletion } from '../utils/profileCompleteness';
 import api from '../services/api';
 
 const ICONS = {
@@ -157,13 +158,18 @@ const MENU_COUNT_KEYS = {
   'ed-notes-general': 'ed_notes_unreplied',
 };
 
+const PENDING_PROFILE_MENU = [
+  { id: 'account', label: 'Complete Profile', path: '/dashboard/profile' },
+];
+
 export const Sidebar = ({ collapsed = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
   const { unreadCount } = useNotifications();
-  const menu = getMenuForRole(user?.role, user);
-  const showCounts = canSeeMenuCounts(user?.role);
+  const pendingProfile = needsProfileCompletion(user);
+  const menu = pendingProfile ? PENDING_PROFILE_MENU : getMenuForRole(user?.role, user);
+  const showCounts = !pendingProfile && canSeeMenuCounts(user?.role);
   const [counts, setCounts] = useState({});
   const [openGroups, setOpenGroups] = useState(() => {
     const initial = {};
@@ -174,10 +180,11 @@ export const Sidebar = ({ collapsed = false }) => {
   });
 
   useEffect(() => {
+    if (pendingProfile) return;
     api.get('/dashboard/overview').then((res) => {
       setCounts(res.data?.counts || {});
     }).catch(() => {});
-  }, []);
+  }, [pendingProfile]);
 
   const badgeFor = (id) => {
     if (id === 'notifications') return unreadCount;

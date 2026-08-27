@@ -1,9 +1,14 @@
 import { useState, useRef } from 'react';
-import { UserCog, Camera, Upload, CheckCircle2, User, Phone, PenLine, Mail, Shield, Lock, Eye, EyeOff, Briefcase, MapPin, Calendar, Globe, IdCard, FileText } from 'lucide-react';
+import { UserCog, Camera, Upload, CheckCircle2, AlertCircle, User, Phone, PenLine, Mail, Shield, Lock, Eye, EyeOff, Briefcase, MapPin, Calendar, Globe, IdCard, FileText } from 'lucide-react';
 import { PageHeading } from '../components/PageHeading';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api/authService';
 import { fileUrl } from '../services/api/config';
+import {
+  PROFILE_FIELD_LABELS,
+  getMissingProfileFields,
+  needsProfileCompletion,
+} from '../utils/profileCompleteness';
 
 const RWANDA_DISTRICTS = [
   'Bugesera', 'Burera', 'Gakenke', 'Gasabo', 'Gatsibo', 'Gicumbi', 'Gisagara', 'Huye', 'Kamonyi',
@@ -116,7 +121,7 @@ export const ProfileSettingsPage = () => {
       const res = await authService.updateProfile(data);
       if (res.success) {
         updateUser(res.data);
-        showMessage('Profile updated successfully');
+        showMessage(res.message || 'Profile updated successfully');
         setPhotoPreview(null);
       } else {
         showMessage(res.message || 'Failed to update profile', 'error');
@@ -197,13 +202,39 @@ export const ProfileSettingsPage = () => {
     }
   };
 
+  const pendingActivation = needsProfileCompletion(user);
+  const missingFields = getMissingProfileFields(user).map((field) => PROFILE_FIELD_LABELS[field] || field);
+
   return (
     <div className="space-y-6">
       <PageHeading
         title="Profile Settings"
-        subtitle="Update your personal details, profile photo, and signature"
+        subtitle={pendingActivation
+          ? 'Complete all required fields to activate your account'
+          : 'Update your personal details, profile photo, and signature'}
         icon={<UserCog className="h-6 w-6" />}
       />
+
+      {pendingActivation && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-semibold">Your account is not active yet</p>
+              <p className="mt-1 text-amber-800">
+                You can log in only to finish your profile. Once every required field below is filled
+                (including photo and signature), your account activates automatically. If an
+                administrator later deactivates you, you will not be able to log in.
+              </p>
+              {missingFields.length > 0 && (
+                <p className="mt-2">
+                  Still missing: <span className="font-medium">{missingFields.join(', ')}</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-sm transition-all ${

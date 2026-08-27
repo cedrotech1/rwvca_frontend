@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Building2, Plus, Shield, Trash2, RotateCcw, Pencil, CalendarDays, Users } from 'lucide-react';
+import { BarChart3, Building2, Plus, Shield, Trash2, RotateCcw, Pencil, CalendarDays, Users, UserCheck, UserX } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../components/ui/dataUi';
 import api from '../../services/api';
@@ -14,6 +14,12 @@ function signatureStatus(row) {
   if (!row.signature_url) return 'No signature';
   if (String(row.signature_approved) === '1') return 'Approved';
   return 'Pending';
+}
+
+function accountStatus(row) {
+  if (Number(row.force_deactivated) === 1) return 'Deactivated';
+  if (Number(row.active) === 1) return 'Active';
+  return 'Pending profile';
 }
 
 export default function UsersManagementPage() {
@@ -96,6 +102,20 @@ export default function UsersManagementPage() {
     await load();
   };
 
+  const setActive = async (row, active) => {
+    const action = active ? 'activate' : 'deactivate';
+    const confirmMsg = active
+      ? `Activate ${row.names}? They will be able to use the system.`
+      : `Deactivate ${row.names}? They will not be able to log in until you activate them again (even if their profile is complete).`;
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      await api.put(`/users/${row.id}/${action}`);
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || `Could not ${action} user`);
+    }
+  };
+
   const signature = async (row, approved) => {
     const notes = window.prompt(approved ? 'Optional approval notes' : 'Rejection notes (optional)') || '';
     await api.put(`/users/${row.id}/signature/${approved ? 'approve' : 'reject'}`, { notes });
@@ -155,7 +175,7 @@ export default function UsersManagementPage() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'gender', label: 'Gender' },
-    { key: 'active', label: 'Status', render: (row) => <StatusBadge value={Number(row.active) === 1 ? 'Active' : 'Inactive'} /> },
+    { key: 'active', label: 'Status', render: (row) => <StatusBadge value={accountStatus(row)} /> },
     { key: 'role', label: 'Role', render: (row) => <StatusBadge value={row.role} /> },
     { key: 'department', label: 'Department', render: (row) => row.department?.name || '—' },
     {
@@ -237,6 +257,26 @@ export default function UsersManagementPage() {
                     <button type="button" className="text-rose-600 text-xs font-medium" onClick={() => signature(row, false)}>Reject</button>
                   </>
                 )}
+                {manager && Number(row.force_deactivated) === 1 && (
+                  <button type="button" className="text-emerald-700" onClick={() => setActive(row, true)} title="Activate account">
+                    <UserCheck size={14} />
+                  </button>
+                )}
+                {manager && Number(row.active) === 1 && Number(row.force_deactivated) !== 1 && (
+                  <button type="button" className="text-amber-700" onClick={() => setActive(row, false)} title="Deactivate account">
+                    <UserX size={14} />
+                  </button>
+                )}
+                {manager && Number(row.active) !== 1 && Number(row.force_deactivated) !== 1 && (
+                  <>
+                    <button type="button" className="text-emerald-700" onClick={() => setActive(row, true)} title="Activate account">
+                      <UserCheck size={14} />
+                    </button>
+                    <button type="button" className="text-amber-700" onClick={() => setActive(row, false)} title="Lock account (block login)">
+                      <UserX size={14} />
+                    </button>
+                  </>
+                )}
                 {manager && <button type="button" className="text-[#2f5d31]" onClick={() => openLeave(row)} title="Leave days"><CalendarDays size={14} /></button>}
                 {manager && <button type="button" className="text-[#2f5d31]" onClick={() => openEdit(row)}><Pencil size={14} /></button>}
                 {manager && <button type="button" className="text-rose-600" onClick={() => removeUser(row)}><Trash2 size={14} /></button>}
@@ -272,7 +312,11 @@ export default function UsersManagementPage() {
                 {departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </Field>
-            {!form.id && <p className="text-xs text-gray-500">A temporary password will be generated and emailed to the user.</p>}
+            {!form.id && (
+              <p className="text-xs text-gray-500">
+                A temporary password will be emailed. The account stays inactive until the user logs in and completes their profile (or you activate them).
+              </p>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" className="rounded-lg bg-gray-100 px-4 py-2" onClick={() => setModal(null)}>Cancel</button>
               <button disabled={saving} className="rounded-lg bg-[#2f5d31] text-white px-4 py-2">{saving ? 'Saving...' : 'Save'}</button>

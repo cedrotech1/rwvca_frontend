@@ -11,7 +11,7 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => searchParams.get('error') || '');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -21,7 +21,11 @@ export const Login = () => {
       const result = await login({ email, password });
       if (result.success) {
         const redirect = sanitizeRedirectPath(searchParams.get('redirect'));
-        navigate(redirect || '/dashboard', { replace: true });
+        if (result.user?.needs_profile_completion || Number(result.user?.active) !== 1) {
+          navigate('/dashboard/profile', { replace: true });
+        } else {
+          navigate(redirect || '/dashboard', { replace: true });
+        }
       } else setError(result.message || 'Login failed');
     } catch {
       setError('An unexpected error occurred');

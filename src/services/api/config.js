@@ -38,11 +38,23 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+    if (status === 401 || code === 'ACCOUNT_FORCE_DEACTIVATED') {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       localStorage.removeItem(USER_STORAGE_KEY);
       if (typeof window !== 'undefined' && !isPublicPath(window.location.pathname)) {
-        window.location.href = `${routerBasename() === '/' ? '' : routerBasename()}/login`;
+        const loginPath = `${routerBasename() === '/' ? '' : routerBasename()}/login`;
+        if (code === 'ACCOUNT_FORCE_DEACTIVATED') {
+          window.location.href = `${loginPath}?error=${encodeURIComponent('Your account has been deactivated by an administrator.')}`;
+        } else {
+          window.location.href = loginPath;
+        }
+      }
+    } else if (status === 403 && code === 'PROFILE_INCOMPLETE') {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/dashboard/profile')) {
+        const base = routerBasename() === '/' ? '' : routerBasename();
+        window.location.href = `${base}/dashboard/profile`;
       }
     }
     return Promise.reject(error);
