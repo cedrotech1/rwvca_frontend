@@ -162,7 +162,7 @@ export const Sidebar = ({ collapsed = false }) => {
   const location = useLocation();
   const { logout, user } = useAuth();
   const { unreadCount } = useNotifications();
-  const menu = getMenuForRole(user?.role);
+  const menu = getMenuForRole(user?.role, user);
   const showCounts = canSeeMenuCounts(user?.role);
   const [counts, setCounts] = useState({});
   const [openGroups, setOpenGroups] = useState(() => {

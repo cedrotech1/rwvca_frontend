@@ -74,7 +74,7 @@ export const DashboardLayout = () => {
           />
         </div>
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-150 p-4 lg:p-6 mt-16">
-          {canAccessPath(user?.role, location.pathname) ? <Outlet /> : <AccessDenied />}
+          {canAccessPath(user?.role, location.pathname, user) ? <Outlet /> : <AccessDenied />}
         </main>
       </div>
     </div>

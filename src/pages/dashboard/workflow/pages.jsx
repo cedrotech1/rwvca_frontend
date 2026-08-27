@@ -396,7 +396,7 @@ export const MissionsListPage = () => (
     filters={[MISSION_STATUS, { name: 'user_id', type: 'applicant', label: 'Applicant' }, ...DATE_FILTERS]}
     canDeleteRow={(row, user) => {
       const role = String(user?.role || '').toLowerCase();
-      if (role === 'hr' || role === 'admin') return true;
+      if (role === 'hr' || role === 'accountant' || role === 'admin') return true;
       return Number(row.user_id) === Number(user?.id) && row.mission_requests_status === 'pending';
     }}
     columns={[
@@ -434,7 +434,7 @@ export const TicketsListPage = () => (
       { key: 'created_at', label: 'Created', format: 'datetime' },
       { key: 'replies', label: 'Replies', format: 'count' },
     ]}
-    canDeleteRow={(row, user) => ['admin', 'hr'].includes(String(user?.role || '').toLowerCase()) || (
+    canDeleteRow={(row, user) => ['admin', 'hr', 'accountant'].includes(String(user?.role || '').toLowerCase()) || (
       Number(row.created_by) === Number(user?.id)
       && (row.assigned_to == null || Number(row.assigned_to) === Number(user?.id) || ['open', 'resolved', 'closed'].includes(row.status))
     )}

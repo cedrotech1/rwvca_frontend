@@ -28,6 +28,7 @@ import MemberFormPage from '../pages/dashboard/members/MemberFormPage';
 import MemberViewPage from '../pages/dashboard/members/MemberViewPage';
 import MemberStatisticsPage from '../pages/dashboard/members/MemberStatisticsPage';
 import InventoryPage from '../pages/dashboard/InventoryPage';
+import ProcurementPage from '../pages/dashboard/ProcurementPage';
 import LogsPage from '../pages/LogsPage';
 import SystemSettingsFormPage from '../pages/dashboard/SystemSettingsFormPage';
 import CompanyInfoPage from '../pages/dashboard/CompanyInfoPage';
@@ -211,6 +212,7 @@ export const AppRouter = () => (
         <Route path="members" element={<MembersListPage />} />
         <Route path="permissions" element={<PermissionsListPage />} />
         <Route path="inventory" element={<InventoryPage />} />
+        <Route path="procurement" element={<ProcurementPage />} />
         <Route path="ed-full-access" element={<EdFullAccessPage />} />
         <Route path="subscribers" element={<SubscribersCmsPage />} />
         <Route path="messages" element={<MessagesCmsPage />} />

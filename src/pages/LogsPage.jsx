@@ -11,7 +11,7 @@ import { ChartCard, Donut, HBar, StatCard } from './dashboard/analysis/analysisS
 export default function LogsPage() {
   const { user } = useAuth();
   const { users } = useStaffOptions();
-  const canExport = ['admin', 'ed', 'chairman', 'hr'].includes(String(user?.role || '').toLowerCase());
+  const canExport = ['admin', 'ed', 'chairman', 'hr', 'accountant'].includes(String(user?.role || '').toLowerCase());
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });

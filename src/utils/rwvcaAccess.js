@@ -30,6 +30,7 @@ const VIEW_FINANCE_ITEMS = [
   { id: 'view-vehicle', label: 'Vehicle Utilization', path: '/dashboard/special-requisitions' },
   { id: 'view-finance', label: 'Finance Requisitions', path: '/dashboard/finance-requisitions' },
   { id: 'view-leave', label: 'Leave Requests', path: '/dashboard/leave-requests' },
+  { id: 'view-leave-schedule', label: 'Leave Schedule', path: '/dashboard/leave-schedule' },
   { id: 'view-missions', label: 'Missions', path: '/dashboard/missions' },
   { id: 'view-documents', label: 'Documents', path: '/dashboard/documents' },
   { id: 'view-reports', label: 'Reports', path: '/dashboard/reports' },
@@ -64,6 +65,7 @@ const LINKS = {
   dashboard: { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   'ed-notes': { id: 'ed-notes', label: 'ED Notes', path: '/dashboard/ed-notes' },
   inventory: { id: 'inventory', label: 'Inventory', path: '/dashboard/inventory' },
+  procurement: { id: 'procurement', label: 'Procurement', path: '/dashboard/procurement' },
   permissions: { id: 'permissions', label: 'Permissions', path: '/dashboard/permissions' },
   subscribers: { id: 'subscribers', label: 'Subscriptions', path: '/dashboard/subscribers' },
   settings: { id: 'settings', label: 'Settings', path: '/dashboard/settings' },
@@ -87,6 +89,7 @@ const ROLE_MENUS = {
     VIEW_GROUP,
     GENERAL_GROUP,
     LINKS.inventory,
+    LINKS.procurement,
     ADMIN_SYSTEM_GROUP,
     LINKS.permissions,
     LINKS.subscribers,
@@ -99,6 +102,7 @@ const ROLE_MENUS = {
     CREATE_GROUP,
     VIEW_GROUP,
     GENERAL_GROUP,
+    LINKS.procurement,
     LINKS.permissions,
   ],
   ED: [
@@ -111,6 +115,7 @@ const ROLE_MENUS = {
     GENERAL_GROUP,
     LINKS.members,
     LINKS.inventory,
+    LINKS.procurement,
     LINKS.permissions,
   ],
   Chairman: [
@@ -123,10 +128,12 @@ const ROLE_MENUS = {
     GENERAL_GROUP,
     LINKS.members,
     LINKS.inventory,
+    LINKS.procurement,
     LINKS.permissions,
   ],
   Accountant: [
     LINKS.dashboard,
+    LINKS['manage-users'],
     LINKS['ed-notes'],
     CREATE_GROUP,
     VIEW_FINANCE_GROUP,
@@ -186,6 +193,25 @@ const ROLE_MENUS = {
     CREATE_GROUP,
     VIEW_GROUP,
     GENERAL_GROUP,
+    LINKS.procurement,
+    LINKS.permissions,
+  ],
+  'Project Coordinator': [
+    LINKS.dashboard,
+    LINKS['ed-notes'],
+    CREATE_GROUP,
+    VIEW_GROUP,
+    GENERAL_GROUP,
+    LINKS.procurement,
+    LINKS.permissions,
+  ],
+  'Procurement Officer': [
+    LINKS.dashboard,
+    LINKS.procurement,
+    LINKS['ed-notes'],
+    CREATE_GROUP,
+    VIEW_GROUP,
+    GENERAL_GROUP,
     LINKS.permissions,
   ],
   member: [
@@ -221,12 +247,15 @@ const ROLE_ALIASES = {
   supervisor: 'Membership R. Supervisor',
   logistic: 'logistic',
   'membership coordinator': 'Membership Coordinator',
+  'project coordinator': 'Project Coordinator',
+  'procurement officer': 'Procurement Officer',
+  procurement: 'Procurement Officer',
   member: 'member',
 };
 
 export function canReviewLists(role) {
   const value = String(role || '').trim().toLowerCase();
-  return ['hr', 'admin', 'ed', 'chairman'].includes(value);
+  return ['hr', 'accountant', 'admin', 'ed', 'chairman'].includes(value);
 }
 
 export function canSeeMembershipAnalysis(role) {
@@ -268,11 +297,17 @@ export function resolveRoleKey(role) {
   return ROLE_ALIASES[String(role || '').trim().toLowerCase()] || 'default';
 }
 
-export function getMenuForRole(role) {
+export function getMenuForRole(role, user = null) {
   const menu = [...(ROLE_MENUS[resolveRoleKey(role)] || ROLE_MENUS.default)];
   const analysis = analysisMenuForRole(role);
   const dashIndex = menu.findIndex((item) => item.id === 'dashboard');
   menu.splice(dashIndex >= 0 ? dashIndex + 1 : 1, 0, analysis);
+
+  // Ensure named procurement managers always see the menu even if role alias differs
+  if (canAccessProcurement(user || { role }) && !menu.some((item) => item.id === 'procurement')) {
+    const insertAt = menu.findIndex((item) => item.id === 'inventory');
+    menu.splice(insertAt >= 0 ? insertAt + 1 : menu.length, 0, LINKS.procurement);
+  }
   return menu;
 }
 
@@ -301,7 +336,7 @@ export function canSeeVehicleReceived(role) {
 
 export function canSeeAllTicketsTab(role) {
   const value = String(role || '').trim().toLowerCase();
-  return value === 'hr' || value === 'admin';
+  return value === 'hr' || value === 'accountant' || value === 'admin';
 }
 
 export function canSeeAllMembershipReports(role) {
@@ -338,12 +373,49 @@ export function canApproveMembershipReports(role) {
 
 export function canManageUsers(role) {
   const value = String(role || '').trim().toLowerCase();
-  return value === 'hr' || value === 'admin' || value === 'ed' || value === 'chairman';
+  return value === 'hr' || value === 'accountant' || value === 'admin' || value === 'ed' || value === 'chairman';
 }
 
 export function canSeeFinanceRequisitions(role) {
   const value = String(role || '').trim().toLowerCase();
   return ['accountant', 'assistant to ed', 'assistant to the accountant'].includes(value);
+}
+
+const PROCUREMENT_FULL_ACCESS_EMAILS = [
+  'gnyirabahizi@rwvca.org.rw',
+  'ebizumuremyi@rwvca.org.rw',
+  'mukayisenga@rwvca.org.rw',
+];
+
+export function isProcurementOfficer(role) {
+  const value = String(role || '').trim().toLowerCase();
+  return value === 'procurement officer' || value === 'procurement';
+}
+
+export function canAccessProcurement(userOrRole) {
+  const user = typeof userOrRole === 'object' && userOrRole ? userOrRole : { role: userOrRole };
+  const email = String(user.email || '').trim().toLowerCase();
+  if (PROCUREMENT_FULL_ACCESS_EMAILS.includes(email)) return true;
+  const value = String(user.role || '').trim().toLowerCase();
+  return [
+    'procurement officer',
+    'procurement',
+    'project coordinator',
+    'membership coordinator',
+    'hr',
+    'admin',
+    'ed',
+    'chairman',
+  ].includes(value);
+}
+
+export function canManageProcurement(userOrRole) {
+  const user = typeof userOrRole === 'object' && userOrRole ? userOrRole : { role: userOrRole };
+  const email = String(user.email || '').trim().toLowerCase();
+  if (isProcurementOfficer(user.role)) return true;
+  if (PROCUREMENT_FULL_ACCESS_EMAILS.includes(email)) return true;
+  const value = String(user.role || '').trim().toLowerCase();
+  return ['admin', 'ed', 'chairman'].includes(value);
 }
 
 export function canManageMembers(role) {
@@ -360,10 +432,11 @@ export function canManageMembers(role) {
   ].includes(value);
 }
 
-export function canAccessPath(role, pathname) {
+export function canAccessPath(role, pathname, user = null) {
   const path = (pathname.replace(/\/$/, '') || '/dashboard').replace(/\/document$/, '');
   if (ALWAYS_ALLOWED.includes(path)) return true;
-  const allowed = collectPaths(getMenuForRole(role));
+  if (path.startsWith('/dashboard/procurement') && canAccessProcurement(user || { role })) return true;
+  const allowed = collectPaths(getMenuForRole(role, user || { role }));
   if (path.startsWith('/dashboard/ads') || path.startsWith('/dashboard/partners') || path.startsWith('/dashboard/platforms') || path.startsWith('/dashboard/team')) {
     return allowed.includes('/dashboard/website');
   }
