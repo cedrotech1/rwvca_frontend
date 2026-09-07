@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FolderOpen, Plus } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
 import api from '../../services/api';
-import { fileUrl } from '../../services/api/config';
+import { openProtectedFile } from '../../services/api/config';
 
 export default function DocumentsPage() {
   const [items, setItems] = useState([]);
@@ -67,9 +67,13 @@ export default function DocumentsPage() {
                 <td className="px-4 py-3 font-medium">{row.title}</td>
                 <td className="px-4 py-3">{row.type}</td>
                 <td className="px-4 py-3">
-                  <a className="text-[#2f5d31] underline" href={fileUrl(row.file_path, { auth: true })} target="_blank" rel="noreferrer">
+                  <button
+                    type="button"
+                    className="text-[#2f5d31] underline"
+                    onClick={() => openProtectedFile(`/documents/${row.id}/file`).catch((err) => setError(err.message || 'Could not open file'))}
+                  >
                     Open file
-                  </a>
+                  </button>
                 </td>
                 <td className="px-4 py-3">{row.status}</td>
               </tr>

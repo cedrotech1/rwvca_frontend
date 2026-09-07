@@ -224,7 +224,7 @@ export function ChatAssistant() {
             src="/IGITI.PNG"
             alt="IGITI"
             className="block transition group-hover:drop-shadow-lg"
-            style={{ width: '4cm', height: '4cm', objectFit: 'contain' }}
+            style={{ width: '2.5cm', height: '2.5cm', objectFit: 'contain' }}
           />
           <span className="pointer-events-none absolute bottom-full right-0 mb-2 hidden whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block">
             IGITI — Ask me anything
