@@ -4,8 +4,8 @@ const unwrap = (response) => response.data;
 
 export const api = {
   get: (path, params) => apiClient.get(path, { params }).then(unwrap),
-  post: (path, body) => apiClient.post(path, body).then(unwrap),
-  put: (path, body) => apiClient.put(path, body).then(unwrap),
+  post: (path, body, config = {}) => apiClient.post(path, body, config).then(unwrap),
+  put: (path, body, config = {}) => apiClient.put(path, body, config).then(unwrap),
   del: (path) => apiClient.delete(path).then(unwrap),
   upload: (method, path, formData) => apiClient({ method, url: path, data: formData, timeout: 120000 }).then(unwrap),
 };

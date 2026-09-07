@@ -35,7 +35,8 @@ export const CreateMissionPage = () => (
     subtitle="Create mission request on behalf of an employee"
     apiPath="/mission-requests"
     successTo="/dashboard/missions"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
+    notifyTitle="Notify reviewers as"
     fields={[
       { name: 'employee', label: 'Employee Name', type: 'readonly-user' },
       { name: 'email', label: 'Email', type: 'readonly-email' },
@@ -54,7 +55,8 @@ export const CreateVehiclePage = () => (
     subtitle="Submit a new vehicle usage request"
     apiPath="/special-requisitions"
     successTo="/dashboard/special-requisitions"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
+    notifyTitle="Notify reviewers as"
     fields={[
       { name: 'employee', label: 'Employee Name', type: 'readonly-user' },
       { name: 'department', label: 'Department', type: 'readonly-department' },
@@ -81,7 +83,8 @@ export const CreateLeaveSchedulePage = () => (
     subtitle="Plan your leave schedule for the year"
     apiPath="/leave-schedule"
     successTo="/dashboard/leave-schedule"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
+    notifyTitle="Notify reviewers as"
     fields={[
       { name: 'from_date', label: 'From Date', type: 'date', required: true },
       { name: 'return_date', label: 'Return Date', type: 'date', required: true },
@@ -95,8 +98,10 @@ export const CreateCommunicationPage = () => (
     subtitle="Send a new internal communication"
     apiPath="/communications"
     successTo="/dashboard/communications"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
     useMultipart
+    notifyOnSubmit
+    notifyTitle="Notify recipients as"
     fields={[
       { name: 'title', label: 'Title', required: true, placeholder: 'Enter a clear title...', width: 'full' },
       { name: 'description', label: 'Description / Message', type: 'textarea', required: true, width: 'full', hint: 'PHP used rich text here. This version keeps a normal editor but preserves line breaks.' },
@@ -117,8 +122,10 @@ export const CreatePermissionPage = () => (
     subtitle="Submit a new permission request"
     apiPath="/communications"
     successTo="/dashboard/permissions"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
     useMultipart
+    notifyOnSubmit
+    notifyTitle="Notify recipients as"
     fields={[
       { name: 'title', label: 'Permission Title', required: true, placeholder: 'Enter a clear permission title...', width: 'full' },
       { name: 'description', label: 'Permission Description / Request', type: 'textarea', required: true, width: 'full' },
@@ -141,17 +148,13 @@ export const CreateTicketPage = () => (
     subtitle="Create a new support ticket"
     apiPath="/tickets"
     successTo="/dashboard/tickets"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
     useMultipart
+    notifyOnSubmit
+    notifyTitle="Notify staff as"
     fields={[
       { name: 'title', label: 'Title', required: true, width: 'full' },
       { name: 'description', label: 'Description', type: 'textarea', required: true, width: 'full' },
-      { name: 'priority', label: 'Priority', type: 'select', options: [
-        { value: 'low', label: 'Low' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'high', label: 'High' },
-        { value: 'urgent', label: 'Urgent' },
-      ] },
       { name: 'category', label: 'Category', type: 'select', options: [
         { value: 'General', label: 'General' },
         { value: 'Technical', label: 'Technical' },
@@ -176,6 +179,7 @@ export const CreateTodoPage = () => (
     apiPath="/todos"
     successTo="/dashboard/todos"
     submitLabel="Submit Request"
+    notifyOnSubmit={false}
     fields={[
       { name: 'title', label: 'Task Title', required: true, placeholder: 'Enter task title', width: 'full' },
       { name: 'priority', label: 'Priority', type: 'select', options: [
@@ -199,7 +203,9 @@ export const CreateAttendancePage = () => (
     subtitle="Record staff attendance for a session"
     apiPath="/attendance"
     successTo="/dashboard/attendance"
-    submitLabel="Submit Request"
+    submitLabel="Submit & notify"
+    notifyOnSubmit
+    notifyTitle="Notify participants as"
     fields={[
       { name: 'title', label: 'Title', required: true },
       { name: 'type', label: 'Type', placeholder: 'Meeting / Training' },
@@ -221,8 +227,11 @@ const REQ_STATUS = {
   options: [
     { value: 'draft', label: 'Draft' },
     { value: 'pending', label: 'Pending' },
+    { value: 'verification_process', label: 'Verification Process' },
     { value: 'approved', label: 'Approved' },
+    { value: 'authorized', label: 'Authorized' },
     { value: 'rejected', label: 'Rejected' },
+    { value: 'reverted', label: 'Reverted' },
   ],
 };
 

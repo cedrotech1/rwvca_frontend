@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FilePen, FileText, List, Paperclip, X } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useStaffOptions } from './helpers';
@@ -12,6 +13,7 @@ export default function CreateStaffReportPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { departments, users: allUsers } = useStaffOptions();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [departmentId, setDepartmentId] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [attachments, setAttachments] = useState([]);
@@ -70,6 +72,15 @@ export default function CreateStaffReportPage() {
       setError('Title, type, and content are required.');
       return;
     }
+    let priority = '';
+    if (selectedIds.length) {
+      priority = await askNotifyPriority({
+        title: 'Notify report recipients as',
+        subtitle: 'Choose how this shared report should appear in their notification alerts.',
+        confirmLabel: 'Create & notify',
+      });
+      if (!priority) return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -82,6 +93,7 @@ export default function CreateStaffReportPage() {
       if (form.location.trim()) data.append('location', form.location.trim());
       if (form.period_start) data.append('period_start', form.period_start);
       if (form.period_end) data.append('period_end', form.period_end);
+      if (priority) data.append('priority', priority);
       data.append('recipient_ids', JSON.stringify(selectedIds));
       attachments.forEach((file) => data.append('attachments', file));
       const res = await api.upload('post', '/reports', data);
@@ -232,6 +244,7 @@ export default function CreateStaffReportPage() {
           </button>
         </div>
       </form>
+      {notifyModal}
     </div>
   );
 }

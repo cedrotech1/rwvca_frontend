@@ -171,13 +171,15 @@ export const Sidebar = ({ collapsed = false }) => {
   const menu = pendingProfile ? PENDING_PROFILE_MENU : getMenuForRole(user?.role, user);
   const showCounts = !pendingProfile && canSeeMenuCounts(user?.role);
   const [counts, setCounts] = useState({});
-  const [openGroups, setOpenGroups] = useState(() => {
-    const initial = {};
-    menu.forEach((item) => {
-      if (item.children && groupHasActive(location.pathname, item.children)) initial[item.id] = true;
-    });
-    return initial;
+  const [openGroupId, setOpenGroupId] = useState(() => {
+    const active = menu.find((item) => item.children && groupHasActive(location.pathname, item.children));
+    return active?.id || null;
   });
+
+  useEffect(() => {
+    const active = menu.find((item) => item.children && groupHasActive(location.pathname, item.children));
+    setOpenGroupId(active?.id || null);
+  }, [location.pathname, user?.role]);
 
   useEffect(() => {
     if (pendingProfile) return;
@@ -198,6 +200,10 @@ export const Sidebar = ({ collapsed = false }) => {
     if (path) navigate(path);
   };
 
+  const toggleGroup = (id) => {
+    setOpenGroupId((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <div className={`px-4 py-4 border-b border-gray-100 ${collapsed ? 'lg:px-2' : ''}`}>
@@ -212,7 +218,7 @@ export const Sidebar = ({ collapsed = false }) => {
       <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto px-2 ${collapsed ? 'lg:px-1.5' : ''}`}>
         {menu.map((item) => {
           if (item.children) {
-            const open = Boolean(openGroups[item.id]);
+            const open = openGroupId === item.id;
             const parentActive = groupHasActive(location.pathname, item.children);
             return (
               <div key={item.id}>
@@ -225,7 +231,7 @@ export const Sidebar = ({ collapsed = false }) => {
                         ? 'bg-[#2f5d31]/8 text-[#2f5d31]'
                         : 'text-gray-700 hover:bg-[#2f5d31]/8'
                   } ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
-                  onClick={() => setOpenGroups((prev) => ({ ...prev, [item.id]: !prev[item.id] }))}
+                  onClick={() => toggleGroup(item.id)}
                 >
                   <span className={`w-5 h-5 mr-3 ${collapsed ? 'lg:mr-0' : ''}`}>{ICONS[item.id] || <Grid3x3 size={18} />}</span>
                   <span className={`flex-1 text-left ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
@@ -258,7 +264,10 @@ export const Sidebar = ({ collapsed = false }) => {
               active={pathActive(location.pathname, item.path)}
               badge={badgeFor(item.id)}
               collapsed={collapsed}
-              onClick={() => go(item.path)}
+              onClick={() => {
+                setOpenGroupId(null);
+                go(item.path);
+              }}
             />
           );
         })}

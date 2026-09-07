@@ -5,6 +5,7 @@ import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import { stripClipboardArtifacts } from '../../../utils/sanitize';
 import { useStaffOptions } from './helpers';
 
@@ -18,10 +19,14 @@ export default function CreateFormPage({
   beforeSubmit,
   submitLabel = 'Submit Request',
   useMultipart = false,
+  notifyOnSubmit = true,
+  notifyTitle,
+  notifySubtitle,
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const options = useStaffOptions();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [form, setForm] = useState(() => {
     const values = {};
     fields.forEach((field) => {
@@ -40,32 +45,49 @@ export default function CreateFormPage({
     return String(form[field.showIf.name] || '') === String(field.showIf.value);
   };
 
+  const visibleFields = fields;
+
+  const sendPayload = async (payload) => {
+    const hasFiles = Object.keys(files).length > 0 || useMultipart;
+    if (hasFiles) {
+      const data = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        if (Array.isArray(value)) {
+          value.forEach((item) => data.append(`${key}[]`, item));
+          data.append(key, value.join(','));
+        } else {
+          data.append(key, value);
+        }
+      });
+      Object.entries(files).forEach(([key, file]) => {
+        if (file) data.append(key, file);
+      });
+      await api.upload('post', apiPath, data);
+    } else {
+      await api.post(apiPath, payload);
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setError('');
     try {
-      const payload = beforeSubmit ? beforeSubmit({ ...form }, options, user) : { ...form };
+      let payload = beforeSubmit ? beforeSubmit({ ...form }, options, user) : { ...form };
       if (extraSubmit) Object.assign(payload, extraSubmit(form, options));
-      const hasFiles = Object.keys(files).length > 0 || useMultipart;
-      if (hasFiles) {
-        const data = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value === undefined || value === null) return;
-          if (Array.isArray(value)) {
-            value.forEach((item) => data.append(`${key}[]`, item));
-            data.append(key, value.join(','));
-          } else {
-            data.append(key, value);
-          }
+
+      if (notifyOnSubmit) {
+        const priority = await askNotifyPriority({
+          title: notifyTitle || 'Send notification as',
+          subtitle: notifySubtitle || 'Recipients will see this priority in their header alerts.',
+          confirmLabel: submitLabel,
         });
-        Object.entries(files).forEach(([key, file]) => {
-          if (file) data.append(key, file);
-        });
-        await api.upload('post', apiPath, data);
-      } else {
-        await api.post(apiPath, payload);
+        if (!priority) return;
+        payload = { ...payload, priority };
       }
+
+      setSaving(true);
+      await sendPayload(payload);
       navigate(successTo);
     } catch (err) {
       setError(err.response?.data?.message || 'Save failed');
@@ -79,7 +101,7 @@ export default function CreateFormPage({
       <PageHeading icon={<ClipboardPen className="h-6 w-6" />} title={title} subtitle={subtitle} showBack backTo={successTo} />
       <form onSubmit={submit} className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-6 space-y-4 max-w-4xl">
         <div className="grid sm:grid-cols-2 gap-4">
-          {fields.map((field) => {
+          {visibleFields.map((field) => {
             if (!visible(field)) return null;
             const value = form[field.name] ?? '';
             const selectOptions = field.options
@@ -129,7 +151,7 @@ export default function CreateFormPage({
                     onChange={(e) => setValue(field.name, e.target.value)}
                   >
                     <option value="">{field.placeholder || 'Select'}</option>
-                    {selectOptions.map((option) => (
+                    {selectOptions.filter((option) => option.value !== '').map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
@@ -177,6 +199,7 @@ export default function CreateFormPage({
           {saving ? 'Saving...' : submitLabel}
         </button>
       </form>
+      {notifyModal}
     </div>
   );
 }

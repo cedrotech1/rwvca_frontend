@@ -1,13 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X, Send, RotateCcw, Loader2 } from 'lucide-react';
+import { X, Send, RotateCcw, Loader2, BookOpen, Sparkles } from 'lucide-react';
 import api from '../services/api';
-import apiClient from '../services/api/config.js';
 import { isPublicPath } from '../utils/appPaths';
 import { renderMarkdown } from '../utils/markdown.js';
 
+const ASSISTANT_TIMEOUT_MS = 300000;
+
+function friendlyAssistantError(err) {
+  const serverMsg = err?.response?.data?.message;
+  if (serverMsg && !/timeout of \d+ms exceeded/i.test(serverMsg)) return serverMsg;
+
+  const raw = String(err?.message || '');
+  const isTimeout =
+    err?.code === 'ECONNABORTED' ||
+    /timeout/i.test(raw) ||
+    /timeout of \d+ms exceeded/i.test(String(serverMsg || ''));
+
+  if (isTimeout) {
+    return 'IGITI is taking longer than usual. Please wait a moment and try again.';
+  }
+  return serverMsg || raw || 'Could not reach IGITI. Please try again.';
+}
+
+/** Bump when documentation pack changes so old agents reload fresh docs. */
 function storageKeyFor(audience) {
-  return `igiti-chat-agent-id-v2-${audience}`;
+  return `igiti-chat-agent-id-v4-docs-${audience}`;
 }
 
 function readStoredAgent(audience) {
@@ -17,6 +35,20 @@ function readStoredAgent(audience) {
     return null;
   }
 }
+
+const LOADING_STEPS_PUBLIC = [
+  { icon: BookOpen, label: 'Loading RWVCA documentation…' },
+  { icon: BookOpen, label: 'Reading live website facts…' },
+  { icon: Sparkles, label: 'IGITI AI is preparing your answer…' },
+  { icon: Sparkles, label: 'Almost ready…' },
+];
+
+const LOADING_STEPS_STAFF = [
+  { icon: BookOpen, label: 'Loading MIS system documentation…' },
+  { icon: BookOpen, label: 'Matching menus and workflows…' },
+  { icon: Sparkles, label: 'IGITI AI is preparing your answer…' },
+  { icon: Sparkles, label: 'Almost ready…' },
+];
 
 function MessageBody({ message }) {
   if (message.role === 'user' || message.isError) {
@@ -28,6 +60,49 @@ function MessageBody({ message }) {
       className="igitit-prose prose prose-sm max-w-none text-gray-800 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ol]:my-2"
       dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
     />
+  );
+}
+
+function LoadingStatus({ audience }) {
+  const steps = audience === 'public' ? LOADING_STEPS_PUBLIC : LOADING_STEPS_STAFF;
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    setStepIndex(0);
+    const timer = setInterval(() => {
+      setStepIndex((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [audience, steps.length]);
+
+  const step = steps[stepIndex] || steps[0];
+  const Icon = step.icon;
+
+  return (
+    <div className="rounded-2xl border border-[#2f5d31]/15 bg-white px-3 py-3 shadow-sm">
+      <div className="flex items-start gap-2 text-sm text-[#2f5d31]">
+        <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium flex items-center gap-1.5">
+            <Icon size={14} className="shrink-0" />
+            <span>{step.label}</span>
+          </p>
+          <div className="mt-2 flex gap-1">
+            {steps.map((_, index) => (
+              <span
+                key={index}
+                className={`h-1 flex-1 rounded-full ${
+                  index <= stepIndex ? 'bg-[#2f5d31]' : 'bg-gray-200'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            First reply can take a bit longer while documentation is loaded for the AI.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -97,17 +172,17 @@ export function ChatAssistant() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post(
+      const res = await api.post(
         '/assistant/chat',
         { message: trimmed, agentId, audience },
-        { timeout: 200000 }
+        { timeout: ASSISTANT_TIMEOUT_MS }
       );
-      const payload = res.data?.data || res.data;
+      const payload = res?.data || res;
       const reply = payload?.reply || 'No response received.';
       if (payload?.agentId) persistAgentId(payload.agentId);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Could not reach IGITI.';
+      const msg = friendlyAssistantError(err);
       setError(msg);
       setMessages((prev) => [...prev, { role: 'assistant', content: msg, isError: true }]);
     } finally {
@@ -130,6 +205,10 @@ export function ChatAssistant() {
   if (!enabled) return null;
 
   const placeholder = audience === 'public' ? 'Ask IGITI anything about RWVCA...' : 'Ask IGITI about MIS workflows...';
+  const emptyHint =
+    audience === 'public'
+      ? 'IGITI loads RWVCA documentation first, then answers with AI.'
+      : 'IGITI loads full MIS documentation first, then answers with easy steps.';
 
   return (
     <>
@@ -137,17 +216,37 @@ export function ChatAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="print:hidden fixed bottom-5 right-5 z-[1100] flex h-12 items-center justify-center rounded-full bg-[#2f5d31] px-5 text-sm font-bold tracking-wide text-white shadow-lg transition hover:bg-[#1e3a1e] focus:outline-none focus:ring-2 focus:ring-[#2f5d31] focus:ring-offset-2"
+          title="IGITI — Ask me anything about RWVCA"
+          className="print:hidden group fixed bottom-5 right-5 z-[1100] bg-transparent p-0 shadow-none transition hover:scale-105 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#2f5d31] focus:ring-offset-2"
           aria-label="Open IGITI"
         >
-          IGITI
+          <img
+            src="/IGITI.PNG"
+            alt="IGITI"
+            className="block transition group-hover:drop-shadow-lg"
+            style={{ width: '4cm', height: '4cm', objectFit: 'contain' }}
+          />
+          <span className="pointer-events-none absolute bottom-full right-0 mb-2 hidden whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block">
+            IGITI — Ask me anything
+            <span className="absolute -bottom-1 right-4 h-2 w-2 rotate-45 bg-gray-900" />
+          </span>
         </button>
       )}
 
       {open && (
         <div className="print:hidden fixed bottom-5 right-5 z-[1100] flex h-[min(560px,calc(100vh-2.5rem))] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
           <header className="flex items-center justify-between bg-[#2f5d31] px-4 py-3 text-white">
-            <p className="text-base font-bold tracking-wide">IGITI SUPPORT</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <img
+                src="/IGITI.PNG"
+                alt="IGITI"
+                className="h-10 w-auto shrink-0 object-contain"
+              />
+              <div className="min-w-0">
+                <p className="text-base font-bold tracking-wide">IGITI SUPPORT</p>
+                <p className="text-[11px] text-white/80">Docs first · AI answers</p>
+              </div>
+            </div>
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -170,18 +269,21 @@ export function ChatAssistant() {
           </header>
 
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto bg-gray-50 px-3 py-4">
-            {messages.length === 0 && (
-              <div className="flex flex-wrap gap-2">
-                {suggestions.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => sendMessage(prompt)}
-                    className="rounded-full border border-[#2f5d31]/20 bg-white px-3 py-1.5 text-left text-xs text-[#2f5d31] hover:bg-[#2f5d31]/5"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+            {messages.length === 0 && !loading && (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500 px-1">{emptyHint}</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => sendMessage(prompt)}
+                      className="rounded-full border border-[#2f5d31]/20 bg-white px-3 py-1.5 text-left text-xs text-[#2f5d31] hover:bg-[#2f5d31]/5"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -204,12 +306,7 @@ export function ChatAssistant() {
               </div>
             ))}
 
-            {loading && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Loader2 size={16} className="animate-spin" />
-                IGITI is thinking...
-              </div>
-            )}
+            {loading && <LoadingStatus audience={audience} />}
           </div>
 
           <form

@@ -144,7 +144,15 @@ export function ModuleRecentTable({ module, onOpen }) {
           <h3 className="text-sm font-semibold text-gray-800">{module.label}</h3>
           <p className="text-xs text-gray-500">
             {module.total ?? 0} total
-            {module.approved != null ? ` · ${module.approved || 0} approved · ${module.pending || 0} pending` : ''}
+            {module.statuses && Object.keys(module.statuses).length
+              ? ` · ${Object.entries(module.statuses)
+                .filter(([, count]) => Number(count) > 0)
+                .sort((a, b) => Number(b[1]) - Number(a[1]))
+                .map(([status, count]) => `${count} ${String(status).replace(/_/g, ' ')}`)
+                .join(' · ')}`
+              : module.approved != null
+                ? ` · ${module.approved || 0} approved · ${module.pending || 0} pending`
+                : ''}
           </p>
         </div>
         {module.path && (
@@ -251,7 +259,15 @@ export function EmployeeProfileView({ data, year, onYearChange }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-gray-800 truncate">{module.label}</p>
-                {(module.pending != null || module.approved != null) && (
+                {module.statuses && Object.keys(module.statuses).length ? (
+                  <p className="text-[11px] text-gray-400 leading-snug break-words">
+                    {Object.entries(module.statuses)
+                      .filter(([, count]) => Number(count) > 0)
+                      .sort((a, b) => Number(b[1]) - Number(a[1]))
+                      .map(([status, count]) => `${count} ${String(status).replace(/_/g, ' ')}`)
+                      .join(' · ')}
+                  </p>
+                ) : (module.pending != null || module.approved != null) && (
                   <p className="text-[11px] text-gray-400">{module.approved || 0} approved · {module.pending || 0} pending</p>
                 )}
               </div>

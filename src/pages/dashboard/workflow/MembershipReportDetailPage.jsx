@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Printer } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
-import { formatPhpDate, formatPhpDateTime, useStaffOptions } from './helpers';
+import { formatPhpDate, formatPhpDateTime } from './helpers';
 import { exportCsv, inputClass, labelClass, money, PaymentMethodBadge, SheetTable, StatusBadge } from '../../../components/ui/dataUi';
 import { DetailPageSkeleton } from '../../../components/ui/Skeleton';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import { num, PAYMENT_FIELDS, sum } from './membershipReportShared';
 
 function periodLabel(item) {
@@ -19,16 +20,22 @@ function periodLabel(item) {
   return `${formatPhpDate(item.start_date)} – ${formatPhpDate(item.end_date)}`;
 }
 
+function isExecutiveShareRole(role) {
+  const value = String(role || '').trim().toLowerCase();
+  return value === 'ed' || value === 'chairman';
+}
+
 export default function MembershipReportDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
-  const { users } = useStaffOptions();
   const [item, setItem] = useState(null);
   const [error, setError] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [reviewerId, setReviewerId] = useState('');
   const [assignReason, setAssignReason] = useState('');
+  const [shareUsers, setShareUsers] = useState([]);
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
 
   const load = async () => {
     const res = await api.get(`/membership-reports/${id}`);
@@ -38,6 +45,13 @@ export default function MembershipReportDetailPage() {
   useEffect(() => {
     load().catch((err) => setError(err.response?.data?.message || 'Not found'));
   }, [id]);
+
+  useEffect(() => {
+    if (!item?.permissions?.can_assign) return;
+    api.get('/membership-reports/share-users')
+      .then((res) => setShareUsers(res.data?.items || []))
+      .catch(() => setShareUsers([]));
+  }, [item?.permissions?.can_assign]);
 
   const sendComment = async (event) => {
     event.preventDefault();
@@ -70,7 +84,12 @@ export default function MembershipReportDetailPage() {
   const assignReviewer = async (event) => {
     event.preventDefault();
     if (!reviewerId || !assignReason.trim()) return;
-    await act('reviewers', { reviewer_id: reviewerId, reason: assignReason });
+    const priority = await askNotifyPriority({
+      title: 'Notify assignee as',
+      confirmLabel: 'Assign & notify',
+    });
+    if (!priority) return;
+    await act('reviewers', { reviewer_id: reviewerId, reason: assignReason, priority });
     setReviewerId('');
     setAssignReason('');
   };
@@ -97,6 +116,7 @@ export default function MembershipReportDetailPage() {
     return acc;
   }, {});
   const permissions = item.permissions || {};
+  const otherShareUsers = shareUsers.filter((row) => !isExecutiveShareRole(row.role));
 
   return (
     <div>
@@ -107,6 +127,11 @@ export default function MembershipReportDetailPage() {
         showBack
         backTo="/dashboard/membership-reports"
         actions={[{
+          label: 'Print / PDF',
+          variant: 'secondary',
+          icon: <Printer className="h-4 w-4" />,
+          onClick: () => window.open(`/dashboard/membership-reports/${id}/document`, '_blank', 'noopener,noreferrer'),
+        }, {
           label: 'Export',
           variant: 'secondary',
           icon: <Download className="h-4 w-4" />,
@@ -217,21 +242,25 @@ export default function MembershipReportDetailPage() {
 
         <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
           <div className="bg-[#6b4423] text-white px-4 py-3 flex items-center justify-between">
-            <h3 className="font-semibold">Assigned Reviewers</h3>
+            <h3 className="font-semibold">Share / Assigned</h3>
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{reviewers.length}</span>
           </div>
           <div className="p-4">
             {permissions.can_assign && (
               <form onSubmit={assignReviewer} className="mb-4 space-y-2">
-                <label className={labelClass}>Assign reviewer</label>
+                <label className={labelClass}>Share with</label>
                 <select required className={inputClass} value={reviewerId} onChange={(e) => setReviewerId(e.target.value)}>
                   <option value="">Select staff</option>
-                  {users.map((staff) => (
-                    <option key={staff.id} value={staff.id}>{staff.names} ({staff.role})</option>
-                  ))}
+                  <optgroup label="Staff">
+                    {otherShareUsers.map((staff) => (
+                      <option key={staff.id} value={staff.id}>{staff.names} ({staff.role})</option>
+                    ))}
+                  </optgroup>
                 </select>
-                <input required className={inputClass} placeholder="Assignment reason" value={assignReason} onChange={(e) => setAssignReason(e.target.value)} />
-                <button disabled={saving} className="text-sm bg-[#2f5d31] text-white px-3 py-1.5 rounded-lg">Assign</button>
+                <input required className={inputClass} placeholder="Share / assignment reason" value={assignReason} onChange={(e) => setAssignReason(e.target.value)} />
+                <button disabled={saving} className="text-sm bg-[#2f5d31] text-white px-3 py-1.5 rounded-lg">Assign & notify</button>
+                <p className="text-xs text-gray-500">You will choose notify priority in the next popup.</p>
+                <p className="text-xs text-gray-500">To send ED the missed officers list, use Share missed to ED on the reports list.</p>
               </form>
             )}
             {reviewers.length ? reviewers.map((row) => (
@@ -251,7 +280,7 @@ export default function MembershipReportDetailPage() {
                   </button>
                 )}
               </div>
-            )) : <p className="text-sm text-gray-400">No reviewers assigned yet</p>}
+            )) : <p className="text-sm text-gray-400">Not shared with anyone yet</p>}
           </div>
         </div>
 
@@ -405,6 +434,7 @@ export default function MembershipReportDetailPage() {
           { total: true, name: 'TOTAL TIMBER', qty: money(sum(items, 'number_of_timber')) },
         ]}
       />
+      {notifyModal}
     </div>
   );
 }

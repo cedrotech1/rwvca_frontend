@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../../../services/api';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import { useStaffOptions } from './helpers';
 
 const STAMP_OPTIONS = [
@@ -44,6 +45,7 @@ export default function WorkflowActions({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const { users } = useStaffOptions();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const permissions = item.permissions || {};
 
   const run = async (method, path, body) => {
@@ -60,6 +62,16 @@ export default function WorkflowActions({
     } finally {
       setSaving(false);
     }
+  };
+
+  const runNotify = async (method, path, body, options = {}) => {
+    const priority = await askNotifyPriority({
+      title: options.title || 'Notify as',
+      subtitle: options.subtitle || 'Recipients will see this priority in their notifications.',
+      confirmLabel: options.confirmLabel || 'Continue & notify',
+    });
+    if (!priority) return;
+    return run(method, path, { ...body, priority });
   };
 
   const status = item.mission_requests_status || item.leave_requests_status || item.status;
@@ -101,26 +113,26 @@ export default function WorkflowActions({
           </label>
           <div className="flex flex-wrap gap-2">
             {canVerify && (
-              <ActionButton disabled={saving} tone="success" onClick={() => run('post', verifyPath, { days_authorized: Number(days) || undefined, comment })}>
+              <ActionButton disabled={saving} tone="success" onClick={() => runNotify('post', verifyPath, { days_authorized: Number(days) || undefined, comment }, { confirmLabel: 'HR Verify & notify' })}>
                 {saving ? 'Saving...' : 'HR Verify'}
               </ActionButton>
             )}
             {canRevert && (
-              <ActionButton disabled={saving || !comment.trim()} tone="warn" onClick={() => run('post', revertPath, { comment })}>
+              <ActionButton disabled={saving || !comment.trim()} tone="warn" onClick={() => runNotify('post', revertPath, { comment }, { confirmLabel: 'HR Revert & notify' })}>
                 HR Revert
               </ActionButton>
             )}
             {canHrReject && (
-              <ActionButton disabled={saving} tone="danger" onClick={() => run('post', rejectPath, { reason: comment, comment })}>
+              <ActionButton disabled={saving} tone="danger" onClick={() => runNotify('post', rejectPath, { reason: comment, comment }, { confirmLabel: 'HR Reject & notify' })}>
                 HR Reject
               </ActionButton>
             )}
             {canEdAct && (
               <>
-                <ActionButton disabled={saving} onClick={() => run('post', approvePath, { days_authorized: Number(days) || undefined, ed_signature_and_stamp: stamp, comment })}>
+                <ActionButton disabled={saving} onClick={() => runNotify('post', approvePath, { days_authorized: Number(days) || undefined, ed_signature_and_stamp: stamp, comment }, { confirmLabel: 'Approve & notify' })}>
                   Approve
                 </ActionButton>
-                <ActionButton disabled={saving} tone="danger" onClick={() => run('post', rejectPath, { reason: comment, comment })}>
+                <ActionButton disabled={saving} tone="danger" onClick={() => runNotify('post', rejectPath, { reason: comment, comment }, { confirmLabel: 'Reject & notify' })}>
                   Reject
                 </ActionButton>
               </>
@@ -161,27 +173,27 @@ export default function WorkflowActions({
           </label>
           <div className="flex flex-wrap gap-2">
             {showVerify && (
-              <ActionButton disabled={saving} tone="success" onClick={() => run('post', `${apiPath}/:id/status`, { status: 'verification_process', comment })}>
+              <ActionButton disabled={saving} tone="success" onClick={() => runNotify('post', `${apiPath}/:id/status`, { status: 'verification_process', comment }, { confirmLabel: 'Verify & notify' })}>
                 Verify
               </ActionButton>
             )}
             {showApprove && (
-              <ActionButton disabled={saving} onClick={() => run('post', `${apiPath}/:id/status`, { status: 'approved', comment, ed_signature_and_stamp: stamp })}>
+              <ActionButton disabled={saving} onClick={() => runNotify('post', `${apiPath}/:id/status`, { status: 'approved', comment, ed_signature_and_stamp: stamp }, { confirmLabel: 'Approve & notify' })}>
                 Approve
               </ActionButton>
             )}
             {showRevert && (
-              <ActionButton disabled={saving} tone="warn" onClick={() => run('post', `${apiPath}/:id/status`, { status: 'reverted', reason: comment, comment })}>
+              <ActionButton disabled={saving} tone="warn" onClick={() => runNotify('post', `${apiPath}/:id/status`, { status: 'reverted', reason: comment, comment }, { confirmLabel: 'Revert & notify' })}>
                 Revert
               </ActionButton>
             )}
             {showReject && (
-              <ActionButton disabled={saving} tone="danger" onClick={() => run('post', `${apiPath}/:id/status`, { status: 'rejected', reason: comment, comment })}>
+              <ActionButton disabled={saving} tone="danger" onClick={() => runNotify('post', `${apiPath}/:id/status`, { status: 'rejected', reason: comment, comment }, { confirmLabel: 'Reject & notify' })}>
                 Reject
               </ActionButton>
             )}
             {showAuthorize && (
-              <ActionButton disabled={saving} onClick={() => run('post', `${apiPath}/:id/authorize`, { ed_signature_and_stamp: stamp, comment })}>
+              <ActionButton disabled={saving} onClick={() => runNotify('post', `${apiPath}/:id/authorize`, { ed_signature_and_stamp: stamp, comment }, { confirmLabel: 'Authorize & notify' })}>
                 Authorize
               </ActionButton>
             )}
@@ -193,7 +205,7 @@ export default function WorkflowActions({
                 {(extraAction.options || []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
               <div className="mt-2">
-                <ActionButton disabled={saving} onClick={() => run('put', extraAction.path, { [extraAction.field]: financeStatus, comment })}>
+                <ActionButton disabled={saving} onClick={() => runNotify('put', extraAction.path, { [extraAction.field]: financeStatus, comment }, { confirmLabel: 'Update & notify' })}>
                   {extraAction.submitLabel || 'Update finance status'}
                 </ActionButton>
               </div>
@@ -225,12 +237,12 @@ export default function WorkflowActions({
               </ActionButton>
             )}
             {permissions.can_approve && (
-              <ActionButton disabled={saving} tone="success" onClick={() => run('post', `${apiPath}/:id/status`, { status: 'approved', comment })}>
+              <ActionButton disabled={saving} tone="success" onClick={() => runNotify('post', `${apiPath}/:id/status`, { status: 'approved', comment }, { confirmLabel: 'Approve & notify' })}>
                 Approve
               </ActionButton>
             )}
             {permissions.can_reject && (
-              <ActionButton disabled={saving} tone="danger" onClick={() => run('post', `${apiPath}/:id/status`, { action: 'reject', status: 'rejected', comment })}>
+              <ActionButton disabled={saving} tone="danger" onClick={() => runNotify('post', `${apiPath}/:id/status`, { action: 'reject', status: 'rejected', comment }, { confirmLabel: 'Reject & notify' })}>
                 Reject
               </ActionButton>
             )}
@@ -254,7 +266,17 @@ export default function WorkflowActions({
             <option key={user.id} value={user.id}>{user.names} ({user.role})</option>
           ))}
         </select>
-        <ActionButton disabled={saving || !shareIds.length} onClick={() => run('post', `${apiPath}/:id/share`, { user_ids: shareIds })}>
+        <ActionButton
+          disabled={saving || !shareIds.length}
+          onClick={async () => {
+            const priority = await askNotifyPriority({
+              title: 'Notify shared users as',
+              confirmLabel: 'Share & notify',
+            });
+            if (!priority) return;
+            run('post', `${apiPath}/:id/share`, { user_ids: shareIds, priority });
+          }}
+        >
           Share
         </ActionButton>
       </div>
@@ -265,7 +287,7 @@ export default function WorkflowActions({
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        run('put', extraAction.path, { [extraAction.field]: financeStatus, comment });
+        runNotify('put', extraAction.path, { [extraAction.field]: financeStatus, comment }, { confirmLabel: 'Update & notify' });
       }}
       className="space-y-3"
     >
@@ -282,6 +304,7 @@ export default function WorkflowActions({
     <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-6 mt-4 space-y-4">
       {error && <p className="text-sm text-red-600">{error}</p>}
       {blocks}
+      {notifyModal}
     </div>
   );
 }

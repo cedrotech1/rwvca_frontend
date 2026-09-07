@@ -258,16 +258,23 @@ export function canReviewLists(role) {
   return ['hr', 'accountant', 'admin', 'ed', 'chairman'].includes(value);
 }
 
+function isHrRole(role) {
+  return String(role || '').trim().toLowerCase() === 'hr';
+}
+
 export function canSeeMembershipAnalysis(role) {
+  if (isHrRole(role)) return false;
   const value = String(role || '').trim().toLowerCase();
   return canReviewLists(role) || canSeeAllMembershipReports(role) || canCreateMembershipReport(role) || value.includes('membership');
 }
 
 export function canSeeRequisitionAnalysis(role) {
+  if (isHrRole(role)) return false;
   return canReviewLists(role) || canSeeFinanceRequisitions(role);
 }
 
 export function canSeeMembersAnalysis(role) {
+  if (isHrRole(role)) return false;
   return canReviewLists(role) || canManageMembers(role);
 }
 
@@ -298,7 +305,16 @@ export function resolveRoleKey(role) {
 }
 
 export function getMenuForRole(role, user = null) {
-  const menu = [...(ROLE_MENUS[resolveRoleKey(role)] || ROLE_MENUS.default)];
+  const menu = [...(ROLE_MENUS[resolveRoleKey(role)] || ROLE_MENUS.default)].map((item) => {
+    if (item.id !== 'create') return item;
+    return {
+      ...item,
+      children: (item.children || []).filter((child) => {
+        if (child.id === 'create-membership-report') return canCreateMembershipReport(role);
+        return true;
+      }),
+    };
+  });
   const analysis = analysisMenuForRole(role);
   const dashIndex = menu.findIndex((item) => item.id === 'dashboard');
   menu.splice(dashIndex >= 0 ? dashIndex + 1 : 1, 0, analysis);

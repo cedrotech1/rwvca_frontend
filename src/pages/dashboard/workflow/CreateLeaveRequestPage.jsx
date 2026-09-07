@@ -6,6 +6,7 @@ import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import {
   LEAVE_TYPES,
   LeaveBalanceSummary,
@@ -18,6 +19,7 @@ const currentYear = new Date().getFullYear();
 export default function CreateLeaveRequestPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [balance, setBalance] = useState(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [form, setForm] = useState({
@@ -72,7 +74,6 @@ export default function CreateLeaveRequestPage() {
 
   const submit = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setError('');
     try {
       if (!form.leave_type) throw new Error('Please select your leave reason.');
@@ -88,12 +89,21 @@ export default function CreateLeaveRequestPage() {
         throw new Error(scheduleCheck.message || 'You must pre-schedule these leave dates before submitting a request.');
       }
 
+      const priority = await askNotifyPriority({
+        title: 'Notify reviewers as',
+        subtitle: 'HR / ED will see this priority in their notifications.',
+        confirmLabel: 'Submit & notify',
+      });
+      if (!priority) return;
+
+      setSaving(true);
       const data = new FormData();
       data.append('leave_type', form.leave_type);
       data.append('year', form.year);
       data.append('requested_days', String(requestedDays));
       data.append('leave_from', form.leave_from);
       data.append('return_date', form.return_date);
+      data.append('priority', priority);
       data.append('supporting_letter', letter);
 
       await api.upload('post', '/leave-requests', data);
@@ -108,6 +118,7 @@ export default function CreateLeaveRequestPage() {
   return (
     <div>
       <PageHeading icon={<CalendarPlus className="h-6 w-6" />} title="Apply for Leave" subtitle="Submit a new leave request for approval" showBack backTo="/dashboard/leave-requests" />
+      {notifyModal}
 
       {loadingBalance ? (
         <p className="text-sm text-gray-500">Loading leave balance...</p>
@@ -263,7 +274,7 @@ export default function CreateLeaveRequestPage() {
             disabled={saving || !canSubmit || Boolean(daysWarning)}
             className="rounded-lg bg-[#2f5d31] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
           >
-            {saving ? 'Submitting...' : 'Submit Request'}
+            {saving ? 'Submitting...' : 'Submit & notify'}
           </button>
         </div>
       </form>

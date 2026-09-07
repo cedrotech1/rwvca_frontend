@@ -353,12 +353,30 @@ const CARD_ICONS = {
   users: Users,
 };
 
+function formatCardStatuses(item) {
+  if (item.statuses && typeof item.statuses === 'object') {
+    const line = Object.entries(item.statuses)
+      .filter(([, count]) => Number(count) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([status, count]) => `${count} ${String(status).replace(/_/g, ' ')}`)
+      .join(' · ');
+    if (line) return line;
+  }
+  if (item.pending == null && item.approved == null && item.rejected == null) return null;
+  const parts = [];
+  if (item.approved != null) parts.push(`${item.approved || 0} approved`);
+  if (item.pending != null) parts.push(`${item.pending || 0} pending`);
+  if (item.rejected != null && Number(item.rejected) > 0) parts.push(`${item.rejected} rejected`);
+  return parts.join(' · ') || null;
+}
+
 function CardGrid({ cards }) {
   if (!cards.length) return <p className="text-sm text-gray-400">No modules in this period</p>;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {cards.map((item) => {
         const Icon = CARD_ICONS[item.key] || FileText;
+        const statusLine = formatCardStatuses(item);
         return (
           <Link
             key={item.key}
@@ -370,11 +388,8 @@ function CardGrid({ cards }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-800 truncate">{item.label}</p>
-              {(item.pending != null || item.approved != null) && (
-                <p className="text-[11px] text-gray-400">{item.approved || 0} approved · {item.pending || 0} pending</p>
-              )}
-              {item.amount != null && Number(item.amount) > 0 && (
-                <p className="text-[11px] font-medium text-[#6b4423]">RWF {Number(item.amount).toLocaleString()}</p>
+              {statusLine && (
+                <p className="text-[11px] text-gray-400 leading-snug break-words">{statusLine}</p>
               )}
               {item.key === 'users' && item.male != null && (
                 <p className="text-[11px] text-gray-400">{item.male}m · {item.female}f · {item.active} active</p>

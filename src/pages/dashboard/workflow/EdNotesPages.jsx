@@ -44,7 +44,9 @@ export function EdNotesCreatePage() {
       title="Create ED Note"
       apiPath="/ed-notes"
       successTo="/dashboard/ed-notes"
-      submitLabel="Submit Request"
+      submitLabel="Submit & notify"
+      notifyOnSubmit
+      notifyTitle="Notify recipients as"
       fields={[
         { name: 'module_type', label: 'Module', required: true },
         { name: 'record_id', label: 'Record', type: 'number', required: true },

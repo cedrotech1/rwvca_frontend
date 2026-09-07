@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Plus, Trash2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import api from '../../../services/api';
 import { useStaffOptions } from './helpers';
 
 export default function CreateRequisitionPage() {
   const navigate = useNavigate();
   const { departments, users } = useStaffOptions();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     department_id: '',
@@ -32,12 +34,23 @@ export default function CreateRequisitionPage() {
 
   const submit = async (event, action) => {
     event.preventDefault();
-    setSaving(true);
     setError('');
     try {
+      let priority;
+      if (action !== 'draft') {
+        priority = await askNotifyPriority({
+          title: 'Notify verifier as',
+          subtitle: 'The selected verifier will see this priority in their notifications.',
+          confirmLabel: 'Submit & notify',
+        });
+        if (!priority) return;
+      }
+
+      setSaving(true);
       await api.post('/requisitions', {
         ...form,
         action,
+        ...(priority ? { priority } : {}),
         total_amount_requested: grandTotal,
         items: items.map((item, index) => ({
           sn: index + 1,
@@ -58,6 +71,7 @@ export default function CreateRequisitionPage() {
   return (
     <div>
       <PageHeading icon={<ClipboardList className="h-6 w-6" />} title="Requisition" subtitle="Create a new requisition for approval" showBack backTo="/dashboard/requisitions" />
+      {notifyModal}
       <form className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-6 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <label className={labelClass}>Date
@@ -129,7 +143,7 @@ export default function CreateRequisitionPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex flex-wrap gap-3">
           <button type="button" disabled={saving} onClick={(e) => submit(e, 'draft')} className="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : 'Save as Draft'}</button>
-          <button type="button" disabled={saving} onClick={(e) => submit(e, 'submit')} className="bg-[#2f5d31] text-white px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : 'Submit for Verification'}</button>
+          <button type="button" disabled={saving} onClick={(e) => submit(e, 'submit')} className="bg-[#2f5d31] text-white px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : 'Submit & notify'}</button>
         </div>
       </form>
     </div>

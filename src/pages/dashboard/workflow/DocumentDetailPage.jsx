@@ -12,6 +12,8 @@ import { StatusBadge, inputClass, labelClass } from '../../../components/ui/data
 
 import { DetailPageSkeleton, Skeleton } from '../../../components/ui/Skeleton';
 
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
+
 import api from '../../../services/api';
 
 import { downloadProtectedFile, openProtectedFile } from '../../../services/api/config';
@@ -145,6 +147,7 @@ export default function DocumentDetailPage() {
   const { id } = useParams();
 
   const { fetchNotifications } = useNotifications();
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
 
   const [item, setItem] = useState(null);
 
@@ -167,7 +170,6 @@ export default function DocumentDetailPage() {
   const [selectedUsers, setSelectedUsers] = useState({});
 
   const [isForward, setIsForward] = useState(false);
-
   const [comment, setComment] = useState('');
 
   const [showStatus, setShowStatus] = useState(false);
@@ -330,6 +332,13 @@ export default function DocumentDetailPage() {
 
     }
 
+    const priority = await askNotifyPriority({
+      title: 'Notify shared users as',
+      subtitle: 'Choose how this document share should appear in their notification alerts.',
+      confirmLabel: 'Share & notify',
+    });
+    if (!priority) return;
+
     setSaving(true);
 
     setError('');
@@ -338,7 +347,7 @@ export default function DocumentDetailPage() {
 
     try {
 
-      const res = await api.post(`/documents/${id}/share`, { user_ids: selectedIds, is_forward: isForward });
+      const res = await api.post(`/documents/${id}/share`, { user_ids: selectedIds, is_forward: isForward, priority });
 
       setMessage(res.message || 'Document shared');
 
@@ -897,6 +906,8 @@ export default function DocumentDetailPage() {
             loading={saving}
 
           />
+
+          {notifyModal}
 
         </>
 

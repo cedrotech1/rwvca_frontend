@@ -97,6 +97,11 @@ import {
   VehicleDocumentPage,
   LeaveScheduleDocumentPage,
 } from '../pages/dashboard/workflow/WorkflowDocumentPages';
+import {
+  MembershipReportDocumentPage,
+  MembershipReportGeneratePage,
+} from '../pages/dashboard/workflow/MembershipReportDocumentPages';
+import SharedMissedMembershipListPage from '../pages/dashboard/workflow/SharedMissedMembershipListPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
 import { ProfileSettingsPage } from '../pages/ProfileSettingsPage';
 import { NotFound } from '../pages/NotFound';
@@ -132,6 +137,8 @@ export const AppRouter = () => (
       <Route path="/dashboard/requisitions/:id/document" element={<ProtectedRoute><RequisitionDocumentPage /></ProtectedRoute>} />
       <Route path="/dashboard/special-requisitions/:id/document" element={<ProtectedRoute><VehicleDocumentPage /></ProtectedRoute>} />
       <Route path="/dashboard/leave-schedule/:id/document" element={<ProtectedRoute><LeaveScheduleDocumentPage /></ProtectedRoute>} />
+      <Route path="/dashboard/membership-reports/generate" element={<ProtectedRoute><MembershipReportGeneratePage /></ProtectedRoute>} />
+      <Route path="/dashboard/membership-reports/:id/document" element={<ProtectedRoute><MembershipReportDocumentPage /></ProtectedRoute>} />
 
       <Route
         path="/dashboard"
@@ -204,6 +211,7 @@ export const AppRouter = () => (
         <Route path="website" element={<WebsiteSettingsPage />} />
         <Route path="finance-requisitions" element={<FinanceRequisitionsListPage />} />
         <Route path="membership-reports" element={<MembershipReportsListPage />} />
+        <Route path="membership-reports/shared-missed/:id" element={<SharedMissedMembershipListPage />} />
         <Route path="membership-reports/:id" element={<MembershipReportDetailPage />} />
         <Route path="members/statistics" element={<MemberStatisticsPage />} />
         <Route path="members/new" element={<MemberFormPage />} />

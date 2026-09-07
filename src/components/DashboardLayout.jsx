@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { HighPriorityReminderAlert } from './HighPriorityReminderAlert';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessPath } from '../utils/rwvcaAccess';
 import { needsProfileCompletion } from '../utils/profileCompleteness';
@@ -83,6 +84,7 @@ export const DashboardLayout = () => {
             sidebarCollapsed={sidebarCollapsed}
           />
         </div>
+        <HighPriorityReminderAlert />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-150 p-4 lg:p-6 mt-16">
           {canAccessPath(user?.role, location.pathname, user) || (pendingProfile && onProfilePage)
             ? <Outlet />

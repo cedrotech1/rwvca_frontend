@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Download, Eye, FileText, Plus } from 'lucide-react';
+import { AlertTriangle, Download, Eye, FileText, Plus, Printer, Share2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { DataTable, StatusBadge, exportCsv, inputClass } from '../../../components/ui/dataUi';
+import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
@@ -110,6 +111,18 @@ export default function MembershipReportsListPage() {
   const [tabCounts, setTabCounts] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [printOptions, setPrintOptions] = useState({ districts: [], sites: [] });
+  const [generate, setGenerate] = useState({
+    group_by: 'district',
+    location: '',
+    site_user_id: '',
+  });
+  const [edRecipients, setEdRecipients] = useState([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareTo, setShareTo] = useState('');
+  const [shareNote, setShareNote] = useState('');
+  const [sharing, setSharing] = useState(false);
+  const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const didInit = useRef(false);
 
   const tabs = useMemo(() => {
@@ -143,6 +156,18 @@ export default function MembershipReportsListPage() {
     setSummary(res.data?.summary || { officers: 0, submitted: 0, missed: 0 });
   };
 
+  const loadEdRecipients = async () => {
+    try {
+      const res = await api.get('/membership-reports/share-users');
+      setEdRecipients(res.data?.executives || (res.data?.items || []).filter((row) => {
+        const role = String(row.role || '').toLowerCase();
+        return role === 'ed' || role === 'chairman';
+      }));
+    } catch {
+      setEdRecipients([]);
+    }
+  };
+
   const loadCounts = async () => {
     const listTabs = tabs.filter((item) => item.value !== 'missed');
     const entries = await Promise.all(listTabs.map(async (item) => {
@@ -156,6 +181,21 @@ export default function MembershipReportsListPage() {
     setTabCounts(Object.fromEntries(entries));
   };
 
+  const loadPrintOptions = async (nextFilters = filters, nextTab = tab) => {
+    try {
+      const res = await api.get('/membership-reports/print-options', {
+        ...periodParams(nextFilters),
+        tab: nextTab === 'missed' ? (canSeeAll ? 'all' : 'my') : nextTab,
+      });
+      setPrintOptions({
+        districts: res.data?.districts || [],
+        sites: res.data?.sites || [],
+      });
+    } catch {
+      setPrintOptions({ districts: [], sites: [] });
+    }
+  };
+
   const load = async (nextFilters = filters, nextTab = tab) => {
     setLoading(true);
     try {
@@ -165,9 +205,12 @@ export default function MembershipReportsListPage() {
         activeFilters = { ...activeFilters, report_type: 'DAILY', start_date: today };
         setFilters(activeFilters);
       }
-      if (nextTab === 'missed') await loadCoverage(activeFilters);
-      else await loadReports(activeFilters, nextTab);
-      await loadCounts();
+      // Never keep users on the removed shared_missed tab
+      const safeTab = nextTab === 'shared_missed' ? (canSeeAll ? 'missed' : 'my') : nextTab;
+      if (safeTab !== nextTab) setTab(safeTab);
+      if (safeTab === 'missed') await loadCoverage(activeFilters);
+      else await loadReports(activeFilters, safeTab);
+      await Promise.all([loadCounts(), loadPrintOptions(activeFilters, safeTab)]);
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Could not load membership reports');
@@ -219,6 +262,83 @@ export default function MembershipReportsListPage() {
       { key: 'status', label: 'Status' },
     ], rows);
   };
+
+  const openGeneratedReport = () => {
+    if (generate.group_by === 'district' && !generate.location) {
+      setError('Select a district to generate the PDF report');
+      return;
+    }
+    if (generate.group_by === 'site' && !generate.site_user_id) {
+      setError('Select a site / officer to generate the PDF report');
+      return;
+    }
+    const query = new URLSearchParams({
+      ...periodParams({
+        ...filters,
+        location: generate.group_by === 'district' ? generate.location : '',
+      }),
+      group_by: generate.group_by,
+      tab: tab === 'missed' ? (canSeeAll ? 'all' : 'my') : tab,
+    });
+    if (generate.group_by === 'site') query.set('site_user_id', generate.site_user_id);
+    if (generate.group_by === 'district') query.set('location', generate.location);
+    window.open(`/dashboard/membership-reports/generate?${query.toString()}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const openShareMissed = async () => {
+    setError('');
+    if (!filters.report_type) {
+      setError('Select a report type before sharing the missed list');
+      return;
+    }
+    if (!missedCount) {
+      setError('No missed officers to share for these filters');
+      return;
+    }
+    await loadEdRecipients();
+    setShareOpen(true);
+  };
+
+  const submitShareMissed = async (event) => {
+    event.preventDefault();
+    if (!shareTo) {
+      setError('Select ED to share with');
+      return;
+    }
+    setSharing(true);
+    setError('');
+    try {
+      const priority = await askNotifyPriority({
+        title: 'Notify ED as',
+        subtitle: 'Choose how this missed list should appear in ED header alerts.',
+        confirmLabel: 'Share & notify',
+      });
+      if (!priority) {
+        setSharing(false);
+        return;
+      }
+      const res = await api.post('/membership-reports/missed-shares', {
+        shared_to: shareTo,
+        note: shareNote,
+        priority,
+        filters: periodParams(filters),
+      });
+      setShareOpen(false);
+      setShareNote('');
+      setShareTo('');
+      const first = res.data?.items?.[0];
+      if (first?.id) {
+        window.open(`/dashboard/membership-reports/shared-missed/${first.id}`, '_blank', 'noopener,noreferrer');
+      }
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not share missed list');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const districtChoices = printOptions.districts.length ? printOptions.districts : DISTRICTS;
 
   const reportColumns = [
     { key: 'id', label: '#', render: (row, idx) => idx + 1 },
@@ -278,10 +398,77 @@ export default function MembershipReportsListPage() {
           : 'View your membership reports and any reports assigned to you for review.'}
         actions={[
           { label: 'Export', variant: 'secondary', icon: <Download className="h-4 w-4" />, onClick: exportRows, disabled: !(tab === 'missed' ? coverage.length : items.length) },
+          ...(tab === 'missed' ? [{ label: 'Share missed to ED', variant: 'secondary', icon: <Share2 className="h-4 w-4" />, onClick: openShareMissed, disabled: !missedCount }] : []),
+          { label: 'Generate PDF', variant: 'secondary', icon: <Printer className="h-4 w-4" />, onClick: openGeneratedReport },
           ...(canCreate ? [{ label: 'Create Report', variant: 'primary', icon: <Plus className="h-4 w-4" />, onClick: () => navigate('/dashboard/create/membership-reports') }] : []),
         ]}
       />
 
+      <div className="mb-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Generate printable report</h3>
+            <p className="text-xs text-gray-500">Choose district or site, then print / save as PDF with summary and reporter signatures.</p>
+          </div>
+          <button
+            type="button"
+            onClick={openGeneratedReport}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#2c3e50] px-4 py-2.5 text-sm font-medium text-white"
+          >
+            <Printer size={16} /> Generate PDF report
+          </button>
+        </div>
+        <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-sm text-gray-600">
+            Report by
+            <select
+              className={`mt-1 ${inputClass}`}
+              value={generate.group_by}
+              onChange={(e) => setGenerate((prev) => ({
+                ...prev,
+                group_by: e.target.value,
+                location: '',
+                site_user_id: '',
+              }))}
+            >
+              <option value="district">By district</option>
+              <option value="site">By site / officer</option>
+            </select>
+          </label>
+          {generate.group_by === 'district' ? (
+            <label className="text-sm text-gray-600">
+              District
+              <select
+                className={`mt-1 ${inputClass}`}
+                value={generate.location}
+                onChange={(e) => setGenerate((prev) => ({ ...prev, location: e.target.value }))}
+              >
+                <option value="">Select district</option>
+                {districtChoices.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label className="text-sm text-gray-600">
+              Site / officer
+              <select
+                className={`mt-1 ${inputClass}`}
+                value={generate.site_user_id}
+                onChange={(e) => setGenerate((prev) => ({ ...prev, site_user_id: e.target.value }))}
+              >
+                <option value="">Select site / officer</option>
+                {printOptions.sites.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 lg:col-span-2">
+            Uses the filters below (report type, status, period). Opens a printable A4 document with summary, timber/payment totals, and reporter signature.
+          </div>
+        </div>
+      </div>
       {(canSeeAll || tab !== 'missed') && (
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {tab === 'missed' ? (
@@ -460,13 +647,22 @@ export default function MembershipReportsListPage() {
             rowClassName={(row) => (row.missed ? 'bg-rose-50/70 hover:bg-rose-50' : 'hover:bg-gray-50')}
             renderActions={(row) => (
               row.id ? (
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 font-medium text-[#2f5d31]"
-                  onClick={() => navigate(`/dashboard/membership-reports/${row.id}`)}
-                >
-                  <Eye size={14} /> View report
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 font-medium text-[#2f5d31]"
+                    onClick={() => navigate(`/dashboard/membership-reports/${row.id}`)}
+                  >
+                    <Eye size={14} /> View
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 font-medium text-[#2c3e50]"
+                    onClick={() => window.open(`/dashboard/membership-reports/${row.id}/document`, '_blank', 'noopener,noreferrer')}
+                  >
+                    <Printer size={14} /> PDF
+                  </button>
+                </div>
               ) : (
                 <span className="text-xs font-medium text-rose-600">Missed</span>
               )
@@ -478,17 +674,63 @@ export default function MembershipReportsListPage() {
             rows={items}
             empty="No membership reports found"
             renderActions={(row) => (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 font-medium text-[#2f5d31]"
-                onClick={() => navigate(`/dashboard/membership-reports/${row.id}`)}
-              >
-                <Eye size={14} /> View
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium text-[#2f5d31]"
+                  onClick={() => navigate(`/dashboard/membership-reports/${row.id}`)}
+                >
+                  <Eye size={14} /> View
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium text-[#2c3e50]"
+                  onClick={() => window.open(`/dashboard/membership-reports/${row.id}/document`, '_blank', 'noopener,noreferrer')}
+                >
+                  <Printer size={14} /> PDF
+                </button>
+              </div>
             )}
           />
         )}
       </div>
+
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={submitShareMissed} className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Share missed list to ED</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Saves the current filtered missed officers list and notifies ED with an openable link.
+            </p>
+            <label className="mt-4 block text-sm text-gray-600">
+              Share to
+              <select required className={`mt-1 ${inputClass}`} value={shareTo} onChange={(e) => setShareTo(e.target.value)}>
+                <option value="">Select ED / Chairman</option>
+                {edRecipients.map((row) => (
+                  <option key={row.id} value={row.id}>{row.names} ({row.role})</option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block text-sm text-gray-600">
+              Note
+              <textarea
+                className={`mt-1 ${inputClass} min-h-24`}
+                value={shareNote}
+                onChange={(e) => setShareNote(e.target.value)}
+                placeholder="Optional note for ED"
+              />
+            </label>
+            <p className="mt-2 text-xs text-gray-500">{missedCount} missed officer(s) will be included. You will choose notify priority next.</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" className="rounded-lg bg-gray-100 px-4 py-2 text-sm" onClick={() => setShareOpen(false)}>Cancel</button>
+              <button disabled={sharing} className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white">
+                {sharing ? 'Sharing...' : 'Continue'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {notifyModal}
     </div>
   );
 }
