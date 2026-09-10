@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Building2, Plus, Shield, Trash2, RotateCcw, Pencil, CalendarDays, Users, UserCheck, UserX } from 'lucide-react';
+import { BarChart3, Building2, Plus, Shield, Trash2, RotateCcw, Pencil, CalendarDays, Users, UserCheck, UserX, KeyRound } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../components/ui/dataUi';
 import api from '../../services/api';
@@ -9,6 +9,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { canManageUsers, canReviewLists } from '../../utils/rwvcaAccess';
 
 const emptyUser = { names: '', email: '', phone: '', gender: '', role: '', department_ID: '' };
+
+function isAdminActor(role) {
+  return ['admin', 'ed', 'chairman'].includes(String(role || '').trim().toLowerCase());
+}
 
 function signatureStatus(row) {
   if (!row.signature_url) return 'No signature';
@@ -26,6 +30,7 @@ export default function UsersManagementPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const manager = canManageUsers(user?.role);
+  const adminActor = isAdminActor(user?.role);
   const canAnalyze = canReviewLists(user?.role);
   const [items, setItems] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -33,12 +38,27 @@ export default function UsersManagementPage() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyUser);
   const [leave, setLeave] = useState({ year: new Date().getFullYear(), allowed_days: 0, items: [] });
   const [deptForm, setDeptForm] = useState({ name: '' });
   const [roleForm, setRoleForm] = useState({ role_name: '', description: '' });
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const roleOptions = (() => {
+    const list = Array.isArray(roles) ? [...roles] : [];
+    const names = new Set(list.map((item) => String(item.role_name || '').trim().toLowerCase()));
+    if (adminActor && !names.has('admin')) {
+      list.unshift({ id: 'admin-builtin', role_name: 'admin' });
+    }
+    if (!adminActor) {
+      return list.filter((item) => String(item.role_name || '').trim().toLowerCase() !== 'admin');
+    }
+    return list;
+  })();
 
   const load = async () => {
     try {
@@ -63,6 +83,8 @@ export default function UsersManagementPage() {
   }, [showDeleted]);
 
   const openEdit = (row) => {
+    setTempPassword('');
+    setInfo('');
     setForm({
       id: row.id,
       names: row.names || '',
@@ -78,17 +100,46 @@ export default function UsersManagementPage() {
   const saveUser = async (event) => {
     event.preventDefault();
     setSaving(true);
+    setError('');
+    setInfo('');
     try {
       if (form.id) await api.put(`/users/${form.id}`, form);
       else await api.post('/users', form);
       setModal(null);
       setForm(emptyUser);
+      setTempPassword('');
       await load();
+      setInfo(form.id ? 'User updated.' : 'User created.');
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save user');
     } finally {
       setSaving(false);
     }
+  };
+
+  const resetPassword = async () => {
+    if (!form.id) return;
+    if (!window.confirm(`Reset password for ${form.names || form.email}? A temporary password will be generated.`)) return;
+    setResetting(true);
+    setError('');
+    setInfo('');
+    setTempPassword('');
+    try {
+      const res = await api.post(`/users/${form.id}/reset-password`, {});
+      const password = res.data?.generated_password || '';
+      setTempPassword(password);
+      setInfo(res.message || 'Password reset.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not reset password');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const grantAdmin = () => {
+    if (!adminActor) return;
+    setForm((prev) => ({ ...prev, role: 'admin' }));
+    setInfo('Role set to admin. Click Save to apply Admin access.');
   };
 
   const removeUser = async (row) => {
@@ -236,6 +287,7 @@ export default function UsersManagementPage() {
           />
         </div>
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {info && !modal && <p className="text-sm text-emerald-700 mb-3">{info}</p>}
         <DataTable
           columns={columns}
           rows={items}
@@ -287,7 +339,7 @@ export default function UsersManagementPage() {
       </div>
 
       {modal === 'user' && (
-        <Modal title={form.id ? 'Edit User' : 'Add New User'} onClose={() => setModal(null)}>
+        <Modal title={form.id ? 'Edit User' : 'Add New User'} onClose={() => { setModal(null); setTempPassword(''); }}>
           <form onSubmit={saveUser} className="space-y-3">
             <Field label="Full Name *"><input required className={inputClass} value={form.names} onChange={(e) => setForm({ ...form, names: e.target.value })} /></Field>
             <Field label="Email *"><input required type="email" className={inputClass} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
@@ -303,9 +355,18 @@ export default function UsersManagementPage() {
             <Field label="Role *">
               <select required className={inputClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 <option value="">Select role</option>
-                {roles.map((item) => <option key={item.id} value={item.role_name}>{item.role_name}</option>)}
+                {roleOptions.map((item) => <option key={item.id} value={item.role_name}>{item.role_name}</option>)}
               </select>
             </Field>
+            {adminActor && form.id && String(form.role || '').toLowerCase() !== 'admin' && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-lg border border-[#2f5d31]/30 bg-[#2f5d31]/5 px-3 py-2 text-sm font-medium text-[#2f5d31]"
+                onClick={grantAdmin}
+              >
+                <Shield size={14} /> Give Admin access
+              </button>
+            )}
             <Field label="Department *">
               <select required className={inputClass} value={form.department_ID} onChange={(e) => setForm({ ...form, department_ID: e.target.value })}>
                 <option value="">Select department</option>
@@ -317,8 +378,39 @@ export default function UsersManagementPage() {
                 A temporary password will be emailed. The account stays inactive until the user logs in and completes their profile (or you activate them).
               </p>
             )}
+            {form.id && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-800">Password</p>
+                  <button
+                    type="button"
+                    disabled={resetting}
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#2f5d31] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                    onClick={resetPassword}
+                  >
+                    <KeyRound size={14} /> {resetting ? 'Resetting...' : 'Reset password'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">Generates a temporary password, emails the user when mail works, and shows it here once.</p>
+                {tempPassword && (
+                  <div className="rounded-md bg-white border border-emerald-200 px-3 py-2 text-sm">
+                    <span className="text-gray-600">Temporary password: </span>
+                    <code className="font-semibold text-emerald-800 select-all">{tempPassword}</code>
+                    <button
+                      type="button"
+                      className="ml-2 text-xs text-[#2f5d31] underline"
+                      onClick={() => navigator.clipboard?.writeText(tempPassword)}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {error && modal === 'user' && <p className="text-sm text-red-600">{error}</p>}
+            {info && modal === 'user' && <p className="text-sm text-emerald-700">{info}</p>}
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" className="rounded-lg bg-gray-100 px-4 py-2" onClick={() => setModal(null)}>Cancel</button>
+              <button type="button" className="rounded-lg bg-gray-100 px-4 py-2" onClick={() => { setModal(null); setTempPassword(''); }}>Cancel</button>
               <button disabled={saving} className="rounded-lg bg-[#2f5d31] text-white px-4 py-2">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
