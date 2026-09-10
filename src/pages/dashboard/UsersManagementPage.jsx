@@ -47,6 +47,9 @@ export default function UsersManagementPage() {
   const [roleForm, setRoleForm] = useState({ role_name: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [emailPassword, setEmailPassword] = useState(false);
 
   const roleOptions = (() => {
     const list = Array.isArray(roles) ? [...roles] : [];
@@ -85,6 +88,9 @@ export default function UsersManagementPage() {
   const openEdit = (row) => {
     setTempPassword('');
     setInfo('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setEmailPassword(false);
     setForm({
       id: row.id,
       names: row.names || '',
@@ -119,18 +125,32 @@ export default function UsersManagementPage() {
 
   const resetPassword = async () => {
     if (!form.id) return;
-    if (!window.confirm(`Reset password for ${form.names || form.email}? A temporary password will be generated.`)) return;
+    const password = String(newPassword || '').trim();
+    if (password.length < 6) {
+      setError('Enter a new password with at least 6 characters');
+      return;
+    }
+    if (password !== String(confirmPassword || '').trim()) {
+      setError('New password and confirmation do not match');
+      return;
+    }
+    if (!window.confirm(`Set a new password for ${form.names || form.email}? You will give this password to the user.`)) return;
     setResetting(true);
     setError('');
     setInfo('');
     setTempPassword('');
     try {
-      const res = await api.post(`/users/${form.id}/reset-password`, {});
-      const password = res.data?.generated_password || '';
-      setTempPassword(password);
-      setInfo(res.message || 'Password reset.');
+      const res = await api.post(`/users/${form.id}/reset-password`, {
+        password,
+        notify_email: emailPassword ? 1 : 0,
+      });
+      const saved = res.data?.password || password;
+      setTempPassword(saved);
+      setNewPassword('');
+      setConfirmPassword('');
+      setInfo(res.message || 'New password saved. Share it with the user.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not reset password');
+      setError(err.response?.data?.message || 'Could not set password');
     } finally {
       setResetting(false);
     }
@@ -379,22 +399,44 @@ export default function UsersManagementPage() {
               </p>
             )}
             {form.id && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-800">Password</p>
-                  <button
-                    type="button"
-                    disabled={resetting}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#2f5d31] px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                    onClick={resetPassword}
-                  >
-                    <KeyRound size={14} /> {resetting ? 'Resetting...' : 'Reset password'}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">Generates a temporary password, emails the user when mail works, and shows it here once.</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+                <p className="text-sm font-medium text-gray-800">Set new password</p>
+                <p className="text-xs text-gray-500">Type the password you want to give this user, then save it.</p>
+                <Field label="New password *">
+                  <input
+                    type="text"
+                    autoComplete="new-password"
+                    className={inputClass}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                  />
+                </Field>
+                <Field label="Confirm password *">
+                  <input
+                    type="text"
+                    autoComplete="new-password"
+                    className={inputClass}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                  />
+                </Field>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={emailPassword} onChange={(e) => setEmailPassword(e.target.checked)} />
+                  Also email this password to the user
+                </label>
+                <button
+                  type="button"
+                  disabled={resetting || !newPassword || !confirmPassword}
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#2f5d31] px-3 py-2 text-sm text-white disabled:opacity-50"
+                  onClick={resetPassword}
+                >
+                  <KeyRound size={14} /> {resetting ? 'Saving password...' : 'Save new password'}
+                </button>
                 {tempPassword && (
                   <div className="rounded-md bg-white border border-emerald-200 px-3 py-2 text-sm">
-                    <span className="text-gray-600">Temporary password: </span>
+                    <span className="text-gray-600">Saved password: </span>
                     <code className="font-semibold text-emerald-800 select-all">{tempPassword}</code>
                     <button
                       type="button"
@@ -403,6 +445,7 @@ export default function UsersManagementPage() {
                     >
                       Copy
                     </button>
+                    <p className="text-xs text-gray-500 mt-1">Give this password to the user so they can sign in.</p>
                   </div>
                 )}
               </div>
