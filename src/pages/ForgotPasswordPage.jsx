@@ -24,7 +24,7 @@ export const ForgotPasswordPage = () => {
       setMessage(res.message || 'If this email is registered, you will receive a code shortly.');
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Could not send reset code');
+      setError(authService.authErrorMessage(err, 'Could not send reset code'));
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ export const ForgotPasswordPage = () => {
       setMessage(res.message || 'Code verified. Choose a new password.');
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Invalid reset code');
+      setError(authService.authErrorMessage(err, 'Invalid reset code'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export const ForgotPasswordPage = () => {
       setMessage(res.message || 'Password updated. You can sign in now.');
       setTimeout(() => navigate('/login', { replace: true }), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Could not reset password');
+      setError(authService.authErrorMessage(err, 'Could not reset password'));
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ export const ForgotPasswordPage = () => {
       const res = await authService.forgotPassword(email.trim());
       setMessage(res.message || 'If this email is registered, you will receive a code shortly.');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Could not resend code');
+      setError(authService.authErrorMessage(err, 'Could not resend code'));
     } finally {
       setLoading(false);
     }
