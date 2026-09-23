@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FilePlus, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { FilePlus, Pencil, Plus } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { inputClass, labelClass, money, SheetTable } from '../../../components/ui/dataUi';
@@ -19,10 +19,9 @@ function emptyCustomer() {
   return { date: '', name: '', phone: '', amount: '' };
 }
 
-export default function CreateMembershipReportPage() {
-  const navigate = useNavigate();
+function defaultForm() {
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({
+  return {
     report_type: 'DAILY',
     location: '',
     title: '',
@@ -34,18 +33,99 @@ export default function CreateMembershipReportPage() {
     yearly_year: String(new Date().getFullYear()),
     quarter: '',
     year: new Date().getFullYear(),
-  });
+  };
+}
+
+export default function CreateMembershipReportPage() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const editId = id ? String(id) : '';
+  const isEdit = Boolean(editId);
+
+  const [form, setForm] = useState(defaultForm);
   const [normal, setNormal] = useState([emptyNormal()]);
   const [other, setOther] = useState([emptyOther()]);
   const [customers, setCustomers] = useState([emptyCustomer()]);
   const [payments, setPayments] = useState(Object.fromEntries(PAYMENT_FIELDS.map((item) => [item.method, ''])));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEdit);
 
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
   const period = periodFromType(form);
   const normalCalc = normal.map(calcNormal);
   const otherCalc = other.map(calcOther);
+
+  useEffect(() => {
+    if (!isEdit) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    api.get(`/membership-reports/${editId}`)
+      .then((res) => {
+        if (cancelled) return;
+        const report = res.data;
+        if (!report?.permissions?.can_edit) {
+          setError('You do not have permission to edit this report');
+          return;
+        }
+        const type = String(report.report_type || 'DAILY').toUpperCase();
+        setForm({
+          report_type: type,
+          location: report.location || '',
+          title: report.title || '',
+          comment: report.comment || '',
+          daily_date: type === 'DAILY' ? String(report.start_date || '').slice(0, 10) : new Date().toISOString().slice(0, 10),
+          start_date: String(report.start_date || '').slice(0, 10),
+          end_date: String(report.end_date || '').slice(0, 10),
+          monthly_month: report.monthly_month || MONTHS[new Date().getMonth()],
+          yearly_year: String(report.yearly_year || report.year || new Date().getFullYear()),
+          quarter: report.quarter != null ? String(report.quarter) : '',
+          year: report.year || new Date().getFullYear(),
+        });
+        const items = report.items || [];
+        const normalItems = items
+          .filter((row) => String(row.category || '').toUpperCase() === 'NORMAL')
+          .map((row) => ({
+            timber_name: row.timber_name || 'PINUS',
+            number_of_timber: row.number_of_timber ?? '',
+            price: row.price ?? '',
+            category: 'NORMAL',
+          }));
+        const otherItems = items
+          .filter((row) => String(row.category || '').toUpperCase() === 'OTHER')
+          .map((row) => ({
+            timber_name: row.timber_name || '',
+            number_of_timber: row.number_of_timber ?? '',
+            price: row.price ?? '',
+            msf: row.msf ?? 0,
+            category: 'OTHER',
+          }));
+        setNormal(normalItems.length ? normalItems : [emptyNormal()]);
+        setOther(otherItems.length ? otherItems : [emptyOther()]);
+        const paymentMap = Object.fromEntries(PAYMENT_FIELDS.map((item) => [item.method, '']));
+        (report.payments || []).forEach((row) => {
+          const method = String(row.method || '').toUpperCase();
+          if (Object.prototype.hasOwnProperty.call(paymentMap, method)) {
+            paymentMap[method] = row.amount ?? '';
+          }
+        });
+        setPayments(paymentMap);
+        const customerRows = (report.customers || []).map((row) => ({
+          date: '',
+          name: row.name || '',
+          phone: row.phone || '',
+          amount: row.amount ?? '',
+        }));
+        setCustomers(customerRows.length ? customerRows : [emptyCustomer()]);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.response?.data?.message || 'Could not load report for editing');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [editId, isEdit]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -60,7 +140,7 @@ export default function CreateMembershipReportPage() {
         ...normalCalc.filter((row) => row.timber_name && num(row.number_of_timber) && num(row.price)),
         ...otherCalc.filter((row) => row.timber_name && num(row.number_of_timber) && num(row.price)),
       ];
-      await api.post('/membership-reports', {
+      const payload = {
         ...form,
         start_date: period.start_date,
         end_date: period.end_date,
@@ -72,8 +152,14 @@ export default function CreateMembershipReportPage() {
           phone: row.phone,
           amount: num(row.amount),
         })),
-      });
-      navigate('/dashboard/membership-reports');
+      };
+      if (isEdit) {
+        await api.put(`/membership-reports/${editId}`, payload);
+        navigate(`/dashboard/membership-reports/${editId}`);
+      } else {
+        await api.post('/membership-reports', payload);
+        navigate('/dashboard/membership-reports');
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Save failed');
     } finally {
@@ -81,9 +167,19 @@ export default function CreateMembershipReportPage() {
     }
   };
 
+  if (loading) {
+    return <p className="p-8 text-center text-gray-500">Loading report…</p>;
+  }
+
   return (
     <div>
-      <PageHeading icon={<FilePlus className="h-6 w-6" />} title="Create Membership Report" subtitle="Create a new membership report" showBack backTo="/dashboard/membership-reports" />
+      <PageHeading
+        icon={isEdit ? <Pencil className="h-6 w-6" /> : <FilePlus className="h-6 w-6" />}
+        title={isEdit ? `Edit Membership Report #${editId}` : 'Create Membership Report'}
+        subtitle={isEdit ? 'Update your membership report and resubmit' : 'Create a new membership report'}
+        showBack
+        backTo={isEdit ? `/dashboard/membership-reports/${editId}` : '/dashboard/membership-reports'}
+      />
       <form onSubmit={submit} className="space-y-5">
         <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-5">
           <h3 className="text-sm font-semibold text-gray-800 mb-4">Report Information</h3>
@@ -296,7 +392,7 @@ export default function CreateMembershipReportPage() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button disabled={saving} className="bg-[#2f5d31] text-white px-6 py-2.5 rounded-lg font-medium">
-          {saving ? 'Saving...' : 'Save Report'}
+          {saving ? 'Saving...' : (isEdit ? 'Update Report' : 'Save Report')}
         </button>
       </form>
     </div>

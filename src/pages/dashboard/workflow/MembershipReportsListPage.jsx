@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Download, Eye, FileText, Plus, Printer, Share2 } from 'lucide-react';
+import { AlertTriangle, Download, Eye, FileText, Pencil, Plus, Printer, Share2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { DataTable, StatusBadge, exportCsv, inputClass } from '../../../components/ui/dataUi';
 import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
@@ -682,6 +682,15 @@ export default function MembershipReportsListPage() {
                 >
                   <Eye size={14} /> View
                 </button>
+                {row.permissions?.can_edit && (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 font-medium text-amber-700"
+                    onClick={() => navigate(`/dashboard/membership-reports/${row.id}/edit`)}
+                  >
+                    <Pencil size={14} /> Edit
+                  </button>
+                )}
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 font-medium text-[#2c3e50]"

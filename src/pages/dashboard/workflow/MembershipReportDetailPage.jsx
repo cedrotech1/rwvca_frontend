@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Download, FileText, Printer } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Download, FileText, Pencil, Printer } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -27,6 +27,7 @@ function isExecutiveShareRole(role) {
 
 export default function MembershipReportDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [item, setItem] = useState(null);
   const [error, setError] = useState('');
@@ -126,26 +127,35 @@ export default function MembershipReportDetailPage() {
         subtitle="View membership report details"
         showBack
         backTo="/dashboard/membership-reports"
-        actions={[{
-          label: 'Print / PDF',
-          variant: 'secondary',
-          icon: <Printer className="h-4 w-4" />,
-          onClick: () => window.open(`/dashboard/membership-reports/${id}/document`, '_blank', 'noopener,noreferrer'),
-        }, {
-          label: 'Export',
-          variant: 'secondary',
-          icon: <Download className="h-4 w-4" />,
-          onClick: () => exportCsv(`membership-report-${id}`, [
-            { key: 'category', label: 'Category' },
-            { key: 'timber_name', label: 'Timber' },
-            { key: 'number_of_timber', label: 'Qty' },
-            { key: 'price', label: 'Price' },
-            { key: 'total_cost', label: 'Total cost' },
-            { key: 'vat', label: 'VAT' },
-            { key: 'msf', label: 'MSF' },
-            { key: 'mst', label: 'MST' },
-          ], items),
-        }]}
+        actions={[
+          ...(permissions.can_edit ? [{
+            label: 'Edit Report',
+            variant: 'primary',
+            icon: <Pencil className="h-4 w-4" />,
+            onClick: () => navigate(`/dashboard/membership-reports/${id}/edit`),
+          }] : []),
+          {
+            label: 'Print / PDF',
+            variant: 'secondary',
+            icon: <Printer className="h-4 w-4" />,
+            onClick: () => window.open(`/dashboard/membership-reports/${id}/document`, '_blank', 'noopener,noreferrer'),
+          },
+          {
+            label: 'Export',
+            variant: 'secondary',
+            icon: <Download className="h-4 w-4" />,
+            onClick: () => exportCsv(`membership-report-${id}`, [
+              { key: 'category', label: 'Category' },
+              { key: 'timber_name', label: 'Timber' },
+              { key: 'number_of_timber', label: 'Qty' },
+              { key: 'price', label: 'Price' },
+              { key: 'total_cost', label: 'Total cost' },
+              { key: 'vat', label: 'VAT' },
+              { key: 'msf', label: 'MSF' },
+              { key: 'mst', label: 'MST' },
+            ], items),
+          },
+        ]}
       />
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
