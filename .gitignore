@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# .env stays on disk locally and is set in the cPanel App Env tab.
+.env
 # *.local  # allow .env.local to be tracked
 
 # Editor directories and files
