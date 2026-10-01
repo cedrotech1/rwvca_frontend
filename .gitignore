@@ -12,7 +12,7 @@ dist
 dist-ssr
 # .env stays on disk locally and is set in the cPanel App Env tab.
 .env
-# *.local  # allow .env.local to be tracked
+.env.local
 
 # Editor directories and files
 .vscode/*

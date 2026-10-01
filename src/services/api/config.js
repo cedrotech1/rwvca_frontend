@@ -5,16 +5,22 @@ function isLocalHostname(hostname) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 }
 
+function isLocalApiUrl(url) {
+  if (!url) return true;
+  try {
+    return isLocalHostname(new URL(url).hostname);
+  } catch {
+    return true;
+  }
+}
+
 export function resolveApiBaseUrl() {
   const fromEnv = import.meta.env.VITE_API_BASE_URL;
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || isLocalHostname(window.location.hostname)) {
     return fromEnv || 'http://localhost:9000/api/v1';
   }
-  const { hostname } = window.location;
-  if (isLocalHostname(hostname)) {
-    return fromEnv || 'http://localhost:9000/api/v1';
-  }
-  return fromEnv || `${window.location.origin}/api/v1`;
+  if (fromEnv && !isLocalApiUrl(fromEnv)) return fromEnv;
+  return `${window.location.origin}/api/v1`;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
