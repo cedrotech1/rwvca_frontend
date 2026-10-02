@@ -1,12 +1,17 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(root, 'dist');
 const port = Number(process.env.PORT || 3001);
 const apiTarget = new URL(process.env.API_PROXY_TARGET || 'http://127.0.0.1:3000');
+
+if (process.env.SKIP_BUILD !== '1') {
+  execSync('npx vite build', { cwd: root, stdio: 'inherit' });
+}
 
 const types = {
   '.css': 'text/css; charset=utf-8',
@@ -29,7 +34,8 @@ function send(res, status, body, type = 'text/plain; charset=utf-8') {
 }
 
 function proxyApi(req, res) {
-  const headers = { ...req.headers, host: apiTarget.host };
+  const headers = { ...req.headers };
+  headers['x-forwarded-host'] = req.headers.host || apiTarget.host;
   const upstream = http.request(
     {
       protocol: apiTarget.protocol,

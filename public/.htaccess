@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Send /api to the backend on this server before the React app can catch it.
+RewriteRule ^api(/|$) http://127.0.0.1:3000%{REQUEST_URI} [P,L]
+
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
