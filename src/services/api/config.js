@@ -15,13 +15,15 @@ function isLocalApiUrl(url) {
   }
 }
 
+const PUBLIC_API_BASE_URL = 'https://rwvca-backend.onrender.com/api/v1';
+
 export function resolveApiBaseUrl() {
   const fromEnv = import.meta.env.VITE_API_BASE_URL;
   if (typeof window === 'undefined' || isLocalHostname(window.location.hostname)) {
     return fromEnv || 'http://localhost:9000/api/v1';
   }
-  if (fromEnv && !isLocalApiUrl(fromEnv)) return fromEnv;
-  return `${window.location.origin}/api/v1`;
+  if (fromEnv && !isLocalApiUrl(fromEnv) && !fromEnv.startsWith('/')) return fromEnv;
+  return PUBLIC_API_BASE_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
