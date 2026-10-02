@@ -130,6 +130,7 @@ export const AppRouter = () => (
       </Route>
 
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+      <Route path="/admin" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
 
       <Route path="/dashboard/missions/:id/document" element={<ProtectedRoute><MissionDocumentPage /></ProtectedRoute>} />

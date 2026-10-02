@@ -5,7 +5,7 @@ export function sanitizeRedirectPath(path) {
   if (!path || typeof path !== 'string') return null;
   const value = decodeURIComponent(path.trim());
   if (!value.startsWith('/') || value.startsWith('//')) return null;
-  if (value.startsWith('/login') || value.startsWith('/forgot-password')) return null;
+  if (value.startsWith('/login') || value.startsWith('/admin') || value.startsWith('/forgot-password')) return null;
   return value;
 }
 
@@ -39,6 +39,7 @@ export const PUBLIC_PATHS = [
   '/contact',
   '/platforms',
   '/login',
+  '/admin',
   '/forgot-password',
 ];
 
