@@ -7,6 +7,7 @@ function isLocalHostname(hostname) {
 
 function isLocalApiUrl(url) {
   if (!url) return true;
+  if (url.startsWith('/')) return false;
   try {
     return isLocalHostname(new URL(url).hostname);
   } catch {
