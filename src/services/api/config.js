@@ -15,7 +15,7 @@ function isLocalApiUrl(url) {
   }
 }
 
-const PUBLIC_API_BASE_URL = 'https://rwvca-backend.onrender.com/api/v1';
+const PUBLIC_API_BASE_URL = 'https://api-2.rwvca.org.rw/api/v1';
 
 export function resolveApiBaseUrl() {
   const fromEnv = import.meta.env.VITE_API_BASE_URL;
