@@ -198,7 +198,7 @@ export default function SystemSettingsFormPage() {
               <Database className="mt-0.5 h-5 w-5 text-[#2f5d31]" />
               <div>
                 <h2 className="font-semibold text-gray-900">Database export</h2>
-                <p className="text-sm text-gray-500">Download every table as a .sql file.</p>
+                <p className="text-sm text-gray-500">Download the database as it is, in one .sql file.</p>
               </div>
             </div>
             <button type="button" disabled={exporting} onClick={exportDatabase} className="inline-flex items-center gap-2 rounded-lg bg-[#2f5d31] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">
