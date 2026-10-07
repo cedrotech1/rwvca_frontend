@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Mail, Save, Server, Settings, AlertTriangle } from 'lucide-react';
+import { Database, Download, Mail, Save, Server, Settings, AlertTriangle } from 'lucide-react';
+import apiClient from '../../services/api/config';
 import { PageHeading } from '../../components/PageHeading';
 import { inputClass, labelClass } from '../../components/ui/dataUi';
 import api from '../../services/api';
@@ -20,6 +21,7 @@ export default function SystemSettingsFormPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -54,6 +56,41 @@ export default function SystemSettingsFormPage() {
       setError(err.response?.data?.message || 'Could not save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const exportDatabase = async () => {
+    setExporting(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await apiClient.get('/settings/export-database', {
+        responseType: 'blob',
+        timeout: 180000,
+      });
+      const blob = new Blob([response.data], { type: 'application/sql' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `rwvca-database-${new Date().toISOString().slice(0, 10)}.sql`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setMessage('Database exported as SQL.');
+    } catch (err) {
+      let text = err.response?.data?.message || 'Could not export database';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await err.response.data.text());
+          if (parsed?.message) text = parsed.message;
+        } catch {
+          // keep the default message
+        }
+      }
+      setError(text);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -154,6 +191,20 @@ export default function SystemSettingsFormPage() {
                 {testing ? 'Sending...' : 'Send test email'}
               </button>
             </div>
+          </div>
+
+          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+            <div className="mb-4 flex items-start gap-3">
+              <Database className="mt-0.5 h-5 w-5 text-[#2f5d31]" />
+              <div>
+                <h2 className="font-semibold text-gray-900">Database export</h2>
+                <p className="text-sm text-gray-500">Download every table as a .sql file.</p>
+              </div>
+            </div>
+            <button type="button" disabled={exporting} onClick={exportDatabase} className="inline-flex items-center gap-2 rounded-lg bg-[#2f5d31] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+              <Download size={16} />
+              {exporting ? 'Exporting...' : 'Export database (.sql)'}
+            </button>
           </div>
 
           <div className="flex justify-end">
