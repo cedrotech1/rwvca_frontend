@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { DashboardLayout } from './DashboardLayout';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { ChatAssistant } from './ChatAssistant';
@@ -111,7 +112,25 @@ import MyAnalysisPage from '../pages/dashboard/analysis/MyAnalysisPage';
 import MembershipAnalysisPage from '../pages/dashboard/analysis/MembershipAnalysisPage';
 import MembersAnalysisPage from '../pages/dashboard/analysis/MembersAnalysisPage';
 import RequisitionAnalysisPage from '../pages/dashboard/analysis/RequisitionAnalysisPage';
-import { MaintenanceNotice } from './MaintenanceNotice';
+import { isMaintenanceWindow, MaintenanceNotice } from './MaintenanceNotice';
+
+function isMaintenancePath(pathname = '') {
+  const path = pathname.replace(/\/$/, '') || '/';
+  return path === '/login' || path === '/admin' || path.startsWith('/forgot-password') || path.startsWith('/dashboard');
+}
+
+function MaintenanceGate() {
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(isMaintenanceWindow());
+
+  useEffect(() => {
+    const timer = setInterval(() => setOpen(isMaintenanceWindow()), 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (!open || !isMaintenancePath(pathname)) return null;
+  return <MaintenanceNotice force />;
+}
 
 export const AppRouter = () => (
   <Router basename={routerBasename() === '/' ? undefined : routerBasename()}>
@@ -240,6 +259,7 @@ export const AppRouter = () => (
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <MaintenanceGate />
     <ChatAssistant />
   </Router>
 );
