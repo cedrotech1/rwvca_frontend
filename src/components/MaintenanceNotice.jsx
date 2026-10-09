@@ -1,15 +1,42 @@
+import { Clock } from 'lucide-react';
+
 export function MaintenanceNotice() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-800 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl ring-1 ring-black/5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#2f5d31]">RWVCA</p>
-        <h1 className="mt-3 text-2xl font-semibold text-gray-900">Scheduled maintenance</h1>
-        <p className="mt-3 text-sm leading-6 text-gray-600">
-          The system will be offline for maintenance between 21:00 and 00:00 on 9 October 2026. Please finish your work before then. You can sign in again after midnight.
-        </p>
-        <p className="mt-5 rounded-xl bg-[#2f5d31]/10 px-4 py-3 text-sm font-medium text-[#2f5d31]">
-          9 October 2026 · 21:00 – 00:00
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#003500] via-[#2f5d31] to-[#472b1e] p-4">
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="h-1.5 bg-[#ffca28]" />
+        <div className="px-8 pb-8 pt-8 text-center">
+          <img
+            src="/RWVCA_LOGO.png"
+            alt="RWVCA"
+            className="mx-auto h-24 w-auto"
+          />
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b4423]">
+            Rwanda Wood Value Chain Association
+          </p>
+
+          <div className="mx-auto mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#2f5d31]/10 text-[#2f5d31]">
+            <Clock className="h-6 w-6" />
+          </div>
+          <h1 className="mt-4 text-2xl font-semibold text-[#003500]">Scheduled maintenance</h1>
+          <p className="mt-3 text-sm leading-7 text-gray-600">
+            The system will be offline for maintenance between 21:00 and 00:00 on 9 October 2026.
+            Please finish and save your work before 21:00. You can sign in again after midnight.
+          </p>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 text-left">
+            <div className="rounded-xl bg-[#2f5d31]/10 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6b4423]">Date</p>
+              <p className="mt-1 text-sm font-semibold text-[#003500]">9 October 2026</p>
+            </div>
+            <div className="rounded-xl bg-[#6b4423]/10 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6b4423]">Time</p>
+              <p className="mt-1 text-sm font-semibold text-[#003500]">21:00 – 00:00</p>
+            </div>
+          </div>
+
+          <p className="mt-6 text-xs text-gray-500">Thank you for your patience.</p>
+        </div>
       </div>
     </div>
   );
