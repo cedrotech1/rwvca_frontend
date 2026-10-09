@@ -111,6 +111,7 @@ import MyAnalysisPage from '../pages/dashboard/analysis/MyAnalysisPage';
 import MembershipAnalysisPage from '../pages/dashboard/analysis/MembershipAnalysisPage';
 import MembersAnalysisPage from '../pages/dashboard/analysis/MembersAnalysisPage';
 import RequisitionAnalysisPage from '../pages/dashboard/analysis/RequisitionAnalysisPage';
+import { MaintenanceNotice } from './MaintenanceNotice';
 
 export const AppRouter = () => (
   <Router basename={routerBasename() === '/' ? undefined : routerBasename()}>
@@ -132,6 +133,7 @@ export const AppRouter = () => (
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/admin" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+      <Route path="/maintenance" element={<MaintenanceNotice />} />
 
       <Route path="/dashboard/missions/:id/document" element={<ProtectedRoute><MissionDocumentPage /></ProtectedRoute>} />
       <Route path="/dashboard/leave-requests/:id/document" element={<ProtectedRoute><LeaveDocumentPage /></ProtectedRoute>} />

@@ -202,7 +202,7 @@ export function ChatAssistant() {
     setMessages([]);
   };
 
-  if (!enabled) return null;
+  if (location.pathname === '/maintenance' || !enabled) return null;
 
   const placeholder = audience === 'public' ? 'Ask IGITI anything about RWVCA...' : 'Ask IGITI about MIS workflows...';
   const emptyHint =
