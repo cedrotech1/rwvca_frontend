@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 
 // Set ENABLED to true during a planned outage. Login, admin, and the dashboard then show the card.
-const ENABLED = true;
+const ENABLED = false;
 const START = new Date('2026-10-09T21:00:00+02:00');
 const END = new Date('2026-10-10T00:00:00+02:00');
 
