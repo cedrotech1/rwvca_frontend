@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ClipboardList, Download, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
+import RichTextEditor from '../../components/RichTextEditor';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../components/ui/dataUi';
 import api from '../../services/api';
 import { fileUrl } from '../../services/api/config';
@@ -194,13 +195,21 @@ export default function ResourceListPage({
 
       {open && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <form onSubmit={submit} className="bg-white rounded-xl p-6 w-full max-w-lg space-y-3 shadow-xl max-h-[90vh] overflow-y-auto">
+          <form onSubmit={submit} className={`bg-white rounded-xl p-6 w-full space-y-3 shadow-xl max-h-[90vh] overflow-y-auto ${createFields.some((field) => field.type === 'richtext') ? 'max-w-3xl' : 'max-w-lg'}`}>
             <h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} {title}</h2>
             {createFields.map((field) => (
               !isVisible(field) ? null : (
                 <div key={field.name}>
                   <label className={labelClass}>{field.label}{field.required ? ' *' : ''}</label>
-                  {field.type === 'textarea' ? (
+                  {field.type === 'richtext' ? (
+                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                      <RichTextEditor
+                        value={form[field.name] || ''}
+                        onChange={(html) => setForm({ ...form, [field.name]: html })}
+                        placeholder={field.placeholder || `Write ${field.label.toLowerCase()}...`}
+                      />
+                    </div>
+                  ) : field.type === 'textarea' ? (
                     <textarea required={field.required} className={inputClass} value={form[field.name] || ''} onChange={(e) => setForm({ ...form, [field.name]: e.target.value })} />
                   ) : field.type === 'select' ? (
                     <select required={field.required} className={inputClass} value={form[field.name] ?? ''} onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}>

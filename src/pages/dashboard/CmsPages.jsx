@@ -108,7 +108,7 @@ export const EventsCmsPage = () => (
     createFields={[
       { name: 'title', label: 'Title', required: true },
       { name: 'date', label: 'Date', type: 'date', required: true },
-      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'description', label: 'Description', type: 'richtext' },
       { name: 'status', label: 'Status', type: 'select', required: true, options: PUBLISH_STATUS },
     ]}
   />

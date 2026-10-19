@@ -5,6 +5,7 @@ import EventCards from './EventCards';
 import { publicApi } from '../../services/api';
 import { fileUrl } from '../../services/api/config';
 import { formatEventDate, startOfToday } from '../../components/public/publicUi';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -42,7 +43,10 @@ export default function EventDetailPage() {
               {date.full}
             </p>
             {item.image ? <img src={fileUrl(item.image)} alt="" className="w-full rounded-lg mb-6" /> : null}
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed text-justify">{item.description}</div>
+            <div
+              className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-justify"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.description) }}
+            />
             {extraImages.length ? (
               <div className="grid sm:grid-cols-2 gap-4 mt-8">
                 {extraImages.map((image) => (
