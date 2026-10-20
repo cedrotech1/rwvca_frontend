@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Plus,
   RotateCcw,
@@ -9,9 +11,10 @@ import {
   Search,
   Shield,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
-import { inputClass, labelClass } from '../../components/ui/dataUi';
+import { inputClass, StatusBadge } from '../../components/ui/dataUi';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { canManageRoles } from '../../utils/rwvcaAccess';
@@ -43,6 +46,10 @@ export default function RolesPrivilegesPage() {
   const [saving, setSaving] = useState(false);
   const [newRole, setNewRole] = useState({ role_name: '', description: '' });
   const [creating, setCreating] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
+  const [roleUsers, setRoleUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,7 +81,31 @@ export default function RolesPrivilegesPage() {
     setSelectedIds(ids);
     setBaselineIds(new Set(ids));
     setInfo('');
+    setShowUsers(false);
+    setRoleUsers([]);
+    setUsersError('');
   }, [selectedRoleId, roles]);
+
+  const loadRoleUsers = async () => {
+    if (!selectedRoleId) return;
+    setUsersLoading(true);
+    setUsersError('');
+    try {
+      const res = await api.get(`/roles/${selectedRoleId}/users`);
+      setRoleUsers(res.data?.users || []);
+    } catch (err) {
+      setUsersError(err.response?.data?.message || 'Could not load users for this role');
+      setRoleUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const toggleUsersPanel = async () => {
+    const next = !showUsers;
+    setShowUsers(next);
+    if (next) await loadRoleUsers();
+  };
 
   const selectedRole = useMemo(
     () => roles.find((r) => Number(r.id) === Number(selectedRoleId)) || null,
@@ -379,6 +410,83 @@ export default function RolesPrivilegesPage() {
                 </div>
               );
             })}
+
+            {selectedRole && (
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-gray-50">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Users with this role</p>
+                    <p className="text-xs text-gray-500">
+                      Primary or acting assignment for {selectedRole.role_name}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleUsersPanel}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#2f5d31]/30 bg-white px-3 py-2 text-sm font-medium text-[#2f5d31] hover:bg-[#2f5d31]/5"
+                  >
+                    <Users size={14} />
+                    {showUsers ? 'Hide users list' : 'Show users list'}
+                    {showUsers ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
+
+                {showUsers && (
+                  <div className="p-4 border-t border-gray-100">
+                    {usersLoading && (
+                      <p className="inline-flex items-center gap-2 text-sm text-gray-500">
+                        <Loader2 size={14} className="animate-spin" /> Loading users…
+                      </p>
+                    )}
+                    {usersError && <p className="text-sm text-rose-600">{usersError}</p>}
+                    {!usersLoading && !usersError && roleUsers.length === 0 && (
+                      <p className="text-sm text-gray-500">No users currently have this role.</p>
+                    )}
+                    {!usersLoading && roleUsers.length > 0 && (
+                      <div className="overflow-x-auto rounded-lg border border-gray-100">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-[#f7faf7] text-left text-xs uppercase tracking-wide text-gray-500">
+                            <tr>
+                              <th className="px-3 py-2 font-semibold">Name</th>
+                              <th className="px-3 py-2 font-semibold">Email</th>
+                              <th className="px-3 py-2 font-semibold">Primary role</th>
+                              <th className="px-3 py-2 font-semibold">Assignment</th>
+                              <th className="px-3 py-2 font-semibold">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {roleUsers.map((row) => (
+                              <tr key={row.id} className="hover:bg-gray-50/80">
+                                <td className="px-3 py-2 font-medium text-gray-900">{row.names || '—'}</td>
+                                <td className="px-3 py-2 text-gray-600">{row.email || '—'}</td>
+                                <td className="px-3 py-2 text-gray-600">{row.role || '—'}</td>
+                                <td className="px-3 py-2">
+                                  <StatusBadge
+                                    value={
+                                      row.assignment === 'primary+acting'
+                                        ? 'Primary + acting'
+                                        : row.assignment === 'acting'
+                                          ? 'Acting'
+                                          : 'Primary'
+                                    }
+                                  />
+                                </td>
+                                <td className="px-3 py-2">
+                                  <StatusBadge value={Number(row.active) === 1 ? 'Active' : 'Inactive'} />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <p className="px-3 py-2 text-xs text-gray-500 border-t border-gray-50">
+                          {roleUsers.length} user{roleUsers.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>
