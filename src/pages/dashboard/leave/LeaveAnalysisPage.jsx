@@ -59,7 +59,7 @@ export default function LeaveAnalysisPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { departments } = useStaffOptions();
-  const isHr = canReviewLists(user?.role);
+  const isHr = canReviewLists(user);
   const [year, setYear] = useState(new Date().getFullYear());
   const [search, setSearch] = useState('');
   const [departmentId, setDepartmentId] = useState('');

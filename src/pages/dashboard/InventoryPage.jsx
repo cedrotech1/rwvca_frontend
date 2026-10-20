@@ -8,12 +8,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { DataTable, inputClass, labelClass, StatusBadge } from '../../components/ui/dataUi';
 import { formatPhpDateTime } from './workflow/helpers';
+import { canManageInventory as userCanManageInventory } from '../../utils/rwvcaAccess';
 
 const UNITS = ['pieces', 'kg', 'liters', 'meters', 'boxes', 'bottles', 'bags', 'sets'];
 
-const normalizeRole = (role) => String(role || '').trim().toLowerCase();
-const canManageInventory = (user) =>
-  ['membership coordinator', 'logistic', 'ed', 'chairman', 'admin'].includes(normalizeRole(user?.role));
+const canManageInventory = (user) => userCanManageInventory(user);
 
 const emptyItemForm = { name: '', description: '', category: '', unit: 'pieces', min_stock: 10 };
 const emptyMovementForm = { item_id: '', type: 'in', quantity: '', reason: '' };

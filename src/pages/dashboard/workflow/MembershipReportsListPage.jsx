@@ -99,9 +99,9 @@ function StatCard({ label, value, className }) {
 export default function MembershipReportsListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canSeeAll = canSeeAllMembershipReports(user?.role);
-  const isSupervisor = isMembershipSupervisor(user?.role);
-  const canCreate = canCreateMembershipReport(user?.role);
+  const canSeeAll = canSeeAllMembershipReports(user);
+  const isSupervisor = isMembershipSupervisor(user);
+  const canCreate = canCreateMembershipReport(user);
   const [tab, setTab] = useState('my');
   const [filters, setFilters] = useState({ ...emptyFilters });
   const [items, setItems] = useState([]);
@@ -224,9 +224,9 @@ export default function MembershipReportsListPage() {
     if (!didInit.current) {
       didInit.current = true;
       const nextFilters = defaultFilters(user.role);
-      const nextTab = isMembershipSupervisor(user.role)
+      const nextTab = isMembershipSupervisor(user)
         ? 'missed'
-        : canSeeAllMembershipReports(user.role)
+        : canSeeAllMembershipReports(user)
           ? 'all'
           : 'my';
       setFilters(nextFilters);

@@ -1,329 +1,202 @@
 /**
- * Staff menus and route access copied from PHP dashboard1/includes/sidebar.php.
- * Role keys match the PHP $roleMenus array.
+ * Staff menus and route access driven by privilege_codes from the API.
+ * Defaults are seeded in the backend; manage via Roles & Privileges page.
  */
 
 const CREATE_ITEMS = [
-  { id: 'create-requisition', label: 'Requisition', path: '/dashboard/create/requisitions' },
-  { id: 'create-vehicle', label: 'Vehicle Utilization', path: '/dashboard/create/special-requisitions' },
-  { id: 'create-leave', label: 'Leave Request', path: '/dashboard/create/leave-requests' },
-  { id: 'create-leave-schedule', label: 'Leave Schedule', path: '/dashboard/create/leave-schedule' },
-  { id: 'create-mission', label: 'Mission', path: '/dashboard/create/missions' },
-  { id: 'create-document', label: 'Document', path: '/dashboard/create/documents' },
-  { id: 'create-report', label: 'Report', path: '/dashboard/create/reports' },
-  { id: 'create-membership-report', label: 'Membership Report', path: '/dashboard/create/membership-reports' },
+  { id: 'create-requisition', label: 'Requisition', path: '/dashboard/create/requisitions', privilege: 'menu.create.requisition' },
+  { id: 'create-vehicle', label: 'Vehicle Utilization', path: '/dashboard/create/special-requisitions', privilege: 'menu.create.vehicle' },
+  { id: 'create-leave', label: 'Leave Request', path: '/dashboard/create/leave-requests', privilege: 'menu.create.leave' },
+  { id: 'create-leave-schedule', label: 'Leave Schedule', path: '/dashboard/create/leave-schedule', privilege: 'menu.create.leave_schedule' },
+  { id: 'create-mission', label: 'Mission', path: '/dashboard/create/missions', privilege: 'menu.create.mission' },
+  { id: 'create-document', label: 'Document', path: '/dashboard/create/documents', privilege: 'menu.create.document' },
+  { id: 'create-report', label: 'Report', path: '/dashboard/create/reports', privilege: 'menu.create.report' },
+  { id: 'create-membership-report', label: 'Membership Report', path: '/dashboard/create/membership-reports', privilege: 'menu.create.membership_report' },
 ];
 
 const VIEW_ITEMS = [
-  { id: 'view-requisitions', label: 'Requisitions', path: '/dashboard/requisitions' },
-  { id: 'view-vehicle', label: 'Vehicle Utilization', path: '/dashboard/special-requisitions' },
-  { id: 'view-leave', label: 'Leave Requests', path: '/dashboard/leave-requests' },
-  { id: 'view-leave-schedule', label: 'Leave Schedule', path: '/dashboard/leave-schedule' },
-  { id: 'view-missions', label: 'Missions', path: '/dashboard/missions' },
-  { id: 'view-documents', label: 'Documents', path: '/dashboard/documents' },
-  { id: 'view-reports', label: 'Reports', path: '/dashboard/reports' },
-  { id: 'view-membership-reports', label: 'Membership Reports', path: '/dashboard/membership-reports' },
-];
-
-const VIEW_FINANCE_ITEMS = [
-  { id: 'view-requisitions', label: 'Requisitions', path: '/dashboard/requisitions' },
-  { id: 'view-vehicle', label: 'Vehicle Utilization', path: '/dashboard/special-requisitions' },
-  { id: 'view-finance', label: 'Finance Requisitions', path: '/dashboard/finance-requisitions' },
-  { id: 'view-leave', label: 'Leave Requests', path: '/dashboard/leave-requests' },
-  { id: 'view-leave-schedule', label: 'Leave Schedule', path: '/dashboard/leave-schedule' },
-  { id: 'view-missions', label: 'Missions', path: '/dashboard/missions' },
-  { id: 'view-documents', label: 'Documents', path: '/dashboard/documents' },
-  { id: 'view-reports', label: 'Reports', path: '/dashboard/reports' },
-  { id: 'view-membership-reports', label: 'Membership Reports', path: '/dashboard/membership-reports' },
+  { id: 'view-requisitions', label: 'Requisitions', path: '/dashboard/requisitions', privilege: 'menu.view.requisitions' },
+  { id: 'view-vehicle', label: 'Vehicle Utilization', path: '/dashboard/special-requisitions', privilege: 'menu.view.vehicle' },
+  { id: 'view-finance', label: 'Finance Requisitions', path: '/dashboard/finance-requisitions', privilege: 'menu.view.finance_requisitions' },
+  { id: 'view-leave', label: 'Leave Requests', path: '/dashboard/leave-requests', privilege: 'menu.view.leave' },
+  { id: 'view-leave-schedule', label: 'Leave Schedule', path: '/dashboard/leave-schedule', privilege: 'menu.view.leave_schedule' },
+  { id: 'view-missions', label: 'Missions', path: '/dashboard/missions', privilege: 'menu.view.missions' },
+  { id: 'view-documents', label: 'Documents', path: '/dashboard/documents', privilege: 'menu.view.documents' },
+  { id: 'view-reports', label: 'Reports', path: '/dashboard/reports', privilege: 'menu.view.reports' },
+  { id: 'view-membership-reports', label: 'Membership Reports', path: '/dashboard/membership-reports', privilege: 'menu.view.membership_reports' },
 ];
 
 const GENERAL_ITEMS = [
-  { id: 'tickets', label: 'Open Ticket', path: '/dashboard/tickets' },
-  { id: 'todos', label: 'Todos', path: '/dashboard/todos' },
-  { id: 'communications', label: 'Communications', path: '/dashboard/communications' },
-  { id: 'assets', label: 'Assets', path: '/dashboard/assets' },
-  { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications' },
-  { id: 'account', label: 'Account', path: '/dashboard/profile' },
-  { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance' },
-  { id: 'ed-notes-general', label: 'ED Notes', path: '/dashboard/ed-notes' },
+  { id: 'tickets', label: 'Open Ticket', path: '/dashboard/tickets', privilege: 'menu.tickets' },
+  { id: 'todos', label: 'Todos', path: '/dashboard/todos', privilege: 'menu.todos' },
+  { id: 'communications', label: 'Communications', path: '/dashboard/communications', privilege: 'menu.communications' },
+  { id: 'assets', label: 'Assets', path: '/dashboard/assets', privilege: 'menu.assets' },
+  { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', privilege: 'menu.notifications' },
+  { id: 'account', label: 'Account', path: '/dashboard/profile', privilege: 'menu.account' },
+  { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance', privilege: 'menu.attendance' },
+  { id: 'ed-notes-general', label: 'ED Notes', path: '/dashboard/ed-notes', privilege: 'menu.ed_notes' },
 ];
 
 const ADMIN_SYSTEM_ITEMS = [
-  { id: 'website', label: 'Website Settings', path: '/dashboard/website' },
-  { id: 'membership-setup', label: 'Membership', path: '/dashboard/membership-setup' },
-  { id: 'member-products', label: 'Member Products', path: '/dashboard/member-products' },
-  { id: 'programs', label: 'Programs', path: '/dashboard/programs' },
-  { id: 'gallery', label: 'Gallery', path: '/dashboard/gallery' },
-  { id: 'messages', label: 'Messages', path: '/dashboard/messages' },
-  { id: 'about-cms', label: 'About Page', path: '/dashboard/about' },
-  { id: 'events', label: 'Events', path: '/dashboard/events' },
-  { id: 'users', label: 'Users', path: '/dashboard/users' },
-  { id: 'logs', label: 'System Logs', path: '/dashboard/logs' },
+  { id: 'website', label: 'Website Settings', path: '/dashboard/website', privilege: 'menu.admin.website' },
+  { id: 'membership-setup', label: 'Membership', path: '/dashboard/membership-setup', privilege: 'menu.admin.membership_setup' },
+  { id: 'member-products', label: 'Member Products', path: '/dashboard/member-products', privilege: 'menu.admin.member_products' },
+  { id: 'programs', label: 'Programs', path: '/dashboard/programs', privilege: 'menu.admin.programs' },
+  { id: 'gallery', label: 'Gallery', path: '/dashboard/gallery', privilege: 'menu.admin.gallery' },
+  { id: 'messages', label: 'Messages', path: '/dashboard/messages', privilege: 'menu.admin.messages' },
+  { id: 'about-cms', label: 'About Page', path: '/dashboard/about', privilege: 'menu.admin.about' },
+  { id: 'events', label: 'Events', path: '/dashboard/events', privilege: 'menu.admin.events' },
+  { id: 'users', label: 'Users', path: '/dashboard/users', privilege: 'menu.users' },
+  { id: 'roles', label: 'Roles & Privileges', path: '/dashboard/roles', privilege: 'menu.roles' },
+  { id: 'logs', label: 'System Logs', path: '/dashboard/logs', privilege: 'menu.logs' },
 ];
 
-const LINKS = {
-  dashboard: { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-  'ed-notes': { id: 'ed-notes', label: 'ED Notes', path: '/dashboard/ed-notes' },
-  inventory: { id: 'inventory', label: 'Inventory', path: '/dashboard/inventory' },
-  procurement: { id: 'procurement', label: 'Procurement', path: '/dashboard/procurement' },
-  permissions: { id: 'permissions', label: 'Permissions', path: '/dashboard/permissions' },
-  subscribers: { id: 'subscribers', label: 'Subscriptions', path: '/dashboard/subscribers' },
-  settings: { id: 'settings', label: 'Settings', path: '/dashboard/settings' },
-  members: { id: 'members', label: 'Members', path: '/dashboard/members' },
-  'manage-users': { id: 'manage-users', label: 'User Management', path: '/dashboard/users' },
-  logs: { id: 'logs-page', label: 'Logs Page', path: '/dashboard/logs' },
-  'ed-full-access': { id: 'ed-full-access', label: 'Full Access', path: '/dashboard/ed-full-access' },
-};
+const ANALYSIS_ITEMS = [
+  { id: 'my-analysis', label: 'My Analysis', path: '/dashboard/my-analysis', privilege: 'menu.analysis.my' },
+  { id: 'employee-analysis', label: 'Employee Analysis', path: '/dashboard/employee-analysis', privilege: 'menu.analysis.employee' },
+  { id: 'leave-analysis', label: 'Leave Analysis', path: '/dashboard/leave-analysis', privilege: 'menu.analysis.leave' },
+  { id: 'requisition-analysis', label: 'Requisition Analysis', path: '/dashboard/requisition-analysis', privilege: 'menu.analysis.requisition' },
+  { id: 'membership-analysis', label: 'Membership Analysis', path: '/dashboard/membership-analysis', privilege: 'menu.analysis.membership' },
+  { id: 'members-analysis', label: 'Members Analysis', path: '/dashboard/members-analysis', privilege: 'menu.analysis.members' },
+];
 
-const CREATE_GROUP = { id: 'create', label: 'Create', children: CREATE_ITEMS };
-const VIEW_GROUP = { id: 'view', label: 'View', children: VIEW_ITEMS };
-const VIEW_FINANCE_GROUP = { id: 'view-finance', label: 'View', children: VIEW_FINANCE_ITEMS };
-const GENERAL_GROUP = { id: 'general', label: 'General', children: GENERAL_ITEMS };
-const ADMIN_SYSTEM_GROUP = { id: 'admin-system', label: 'System Settings', children: ADMIN_SYSTEM_ITEMS };
+const TOP_LINKS = [
+  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', privilege: 'menu.dashboard' },
+  { id: 'ed-full-access', label: 'Full Access', path: '/dashboard/ed-full-access', privilege: 'menu.ed_full_access' },
+  { id: 'ed-notes', label: 'ED Notes', path: '/dashboard/ed-notes', privilege: 'menu.ed_notes' },
+  { id: 'manage-users', label: 'User Management', path: '/dashboard/users', privilege: 'menu.users' },
+  { id: 'roles', label: 'Roles & Privileges', path: '/dashboard/roles', privilege: 'menu.roles' },
+  { id: 'logs-page', label: 'Logs Page', path: '/dashboard/logs', privilege: 'menu.logs' },
+  { id: 'members', label: 'Members', path: '/dashboard/members', privilege: 'menu.members' },
+  { id: 'inventory', label: 'Inventory', path: '/dashboard/inventory', privilege: 'menu.inventory' },
+  { id: 'procurement', label: 'Procurement', path: '/dashboard/procurement', privilege: 'menu.procurement' },
+  { id: 'permissions', label: 'Permissions', path: '/dashboard/permissions', privilege: 'menu.permissions' },
+  { id: 'subscribers', label: 'Subscriptions', path: '/dashboard/subscribers', privilege: 'menu.subscribers' },
+  { id: 'settings', label: 'Settings', path: '/dashboard/settings', privilege: 'menu.settings' },
+];
 
-const ROLE_MENUS = {
-  admin: [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.inventory,
-    LINKS.procurement,
-    ADMIN_SYSTEM_GROUP,
-    LINKS.permissions,
-    LINKS.subscribers,
-    LINKS.settings,
-  ],
-  HR: [
-    LINKS.dashboard,
-    LINKS['manage-users'],
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.procurement,
-    LINKS.permissions,
-  ],
-  ED: [
-    LINKS.dashboard,
-    LINKS['ed-full-access'],
-    LINKS['ed-notes'],
-    LINKS.logs,
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.members,
-    LINKS.inventory,
-    LINKS.procurement,
-    LINKS.permissions,
-  ],
-  Chairman: [
-    LINKS.dashboard,
-    LINKS['ed-full-access'],
-    LINKS['ed-notes'],
-    LINKS.logs,
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.members,
-    LINKS.inventory,
-    LINKS.procurement,
-    LINKS.permissions,
-  ],
-  Accountant: [
-    LINKS.dashboard,
-    LINKS['manage-users'],
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_FINANCE_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  'Assistant to ED': [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_FINANCE_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  'Assistant to the Accountant': [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_FINANCE_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  membership_officer: [
-    LINKS.dashboard,
-    LINKS.members,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  'Membership R. Supervisor': [
-    LINKS.dashboard,
-    LINKS.inventory,
-    LINKS.members,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  logistic: [
-    LINKS.dashboard,
-    LINKS.inventory,
-    LINKS.members,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  'Membership Coordinator': [
-    LINKS.dashboard,
-    LINKS.inventory,
-    LINKS.members,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.procurement,
-    LINKS.permissions,
-  ],
-  'Project Coordinator': [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.procurement,
-    LINKS.permissions,
-  ],
-  'Procurement Officer': [
-    LINKS.dashboard,
-    LINKS.procurement,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  member: [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-  default: [
-    LINKS.dashboard,
-    LINKS['ed-notes'],
-    CREATE_GROUP,
-    VIEW_GROUP,
-    GENERAL_GROUP,
-    LINKS.permissions,
-  ],
-};
+const PROCUREMENT_FULL_ACCESS_EMAILS = [
+  'gnyirabahizi@rwvca.org.rw',
+  'ebizumuremyi@rwvca.org.rw',
+  'mukayisenga@rwvca.org.rw',
+];
 
-const ROLE_ALIASES = {
-  admin: 'admin',
-  hr: 'HR',
-  ed: 'ED',
-  chairman: 'Chairman',
-  accountant: 'Accountant',
-  'assistant to ed': 'Assistant to ED',
-  'assistant to the accountant': 'Assistant to the Accountant',
-  membership_officer: 'membership_officer',
-  'membership officer': 'membership_officer',
-  'membership relations officer': 'membership_officer',
-  'membership r. supervisor': 'Membership R. Supervisor',
-  supervisor: 'Membership R. Supervisor',
-  logistic: 'logistic',
-  'membership coordinator': 'Membership Coordinator',
-  'project coordinator': 'Project Coordinator',
-  'procurement officer': 'Procurement Officer',
-  procurement: 'Procurement Officer',
-  member: 'member',
-};
-
-export function canReviewLists(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return ['hr', 'accountant', 'admin', 'ed', 'chairman'].includes(value);
-}
-
-function isHrRole(role) {
-  return String(role || '').trim().toLowerCase() === 'hr';
-}
-
-export function canSeeMembershipAnalysis(role) {
-  if (isHrRole(role)) return false;
-  const value = String(role || '').trim().toLowerCase();
-  return canReviewLists(role) || canSeeAllMembershipReports(role) || canCreateMembershipReport(role) || value.includes('membership');
-}
-
-export function canSeeRequisitionAnalysis(role) {
-  if (isHrRole(role)) return false;
-  return canReviewLists(role) || canSeeFinanceRequisitions(role);
-}
-
-export function canSeeMembersAnalysis(role) {
-  if (isHrRole(role)) return false;
-  return canReviewLists(role) || canManageMembers(role);
-}
-
-function analysisMenuForRole(role) {
-  const items = [
-    { id: 'my-analysis', label: 'My Analysis', path: '/dashboard/my-analysis' },
-  ];
-  if (canReviewLists(role)) {
-    items.push(
-      { id: 'employee-analysis', label: 'Employee Analysis', path: '/dashboard/employee-analysis' },
-      { id: 'leave-analysis', label: 'Leave Analysis', path: '/dashboard/leave-analysis' },
-    );
+export function getEffectiveRoles(roleOrUser) {
+  if (roleOrUser && typeof roleOrUser === 'object') {
+    if (Array.isArray(roleOrUser.effective_roles) && roleOrUser.effective_roles.length) {
+      return [...new Set(roleOrUser.effective_roles.map((r) => String(r || '').trim()).filter(Boolean))];
+    }
+    const primary = roleOrUser.role;
+    const acting = Array.isArray(roleOrUser.acting_roles) ? roleOrUser.acting_roles : [];
+    return [...new Set([primary, ...acting].map((r) => String(r || '').trim()).filter(Boolean))];
   }
-  if (canSeeRequisitionAnalysis(role)) {
-    items.push({ id: 'requisition-analysis', label: 'Requisition Analysis', path: '/dashboard/requisition-analysis' });
-  }
-  if (canSeeMembershipAnalysis(role)) {
-    items.push({ id: 'membership-analysis', label: 'Membership Analysis', path: '/dashboard/membership-analysis' });
-  }
-  if (canSeeMembersAnalysis(role)) {
-    items.push({ id: 'members-analysis', label: 'Members Analysis', path: '/dashboard/members-analysis' });
-  }
-  return { id: 'analysis', label: 'Analysis', children: items };
+  const single = String(roleOrUser || '').trim();
+  return single ? [single] : [];
 }
 
-export function resolveRoleKey(role) {
-  return ROLE_ALIASES[String(role || '').trim().toLowerCase()] || 'default';
+export function hasPrivilege(userOrCodes, code) {
+  const want = String(code || '').trim();
+  if (!want) return false;
+  if (Array.isArray(userOrCodes)) return userOrCodes.includes(want);
+  const list = userOrCodes?.privilege_codes;
+  if (Array.isArray(list)) return list.includes(want);
+  return false;
+}
+
+function privilegeSet(user) {
+  if (Array.isArray(user?.privilege_codes)) return new Set(user.privilege_codes);
+  return null;
+}
+
+function filterByPrivilege(items, privs) {
+  if (!privs) return items;
+  return items.filter((item) => !item.privilege || privs.has(item.privilege));
+}
+
+function stripPrivilegeMeta(item) {
+  const { privilege, ...rest } = item;
+  if (rest.children) {
+    return { ...rest, children: rest.children.map(stripPrivilegeMeta) };
+  }
+  return rest;
 }
 
 export function getMenuForRole(role, user = null) {
-  const menu = [...(ROLE_MENUS[resolveRoleKey(role)] || ROLE_MENUS.default)].map((item) => {
-    if (item.id !== 'create') return item;
-    return {
-      ...item,
-      children: (item.children || []).filter((child) => {
-        if (child.id === 'create-membership-report') return canCreateMembershipReport(role);
-        return true;
-      }),
-    };
-  });
-  const analysis = analysisMenuForRole(role);
-  const dashIndex = menu.findIndex((item) => item.id === 'dashboard');
-  menu.splice(dashIndex >= 0 ? dashIndex + 1 : 1, 0, analysis);
+  const userObj = user || (role && typeof role === 'object' ? role : { role });
+  const privs = privilegeSet(userObj);
 
-  // Ensure named procurement managers always see the menu even if role alias differs
-  if (canAccessProcurement(user || { role }) && !menu.some((item) => item.id === 'procurement')) {
-    const insertAt = menu.findIndex((item) => item.id === 'inventory');
-    menu.splice(insertAt >= 0 ? insertAt + 1 : menu.length, 0, LINKS.procurement);
+  // Without privileges on the session, show a minimal safe menu until /auth/me refreshes.
+  if (!privs) {
+    return [
+      { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+      { id: 'account', label: 'Account', path: '/dashboard/profile' },
+    ];
   }
+
+  const menu = [];
+  const dash = TOP_LINKS.find((l) => l.id === 'dashboard');
+  if (privs.has(dash.privilege)) menu.push(stripPrivilegeMeta(dash));
+
+  const analysisChildren = filterByPrivilege(ANALYSIS_ITEMS, privs).map(stripPrivilegeMeta);
+  if (analysisChildren.length) {
+    menu.push({ id: 'analysis', label: 'Analysis', children: analysisChildren });
+  }
+
+  for (const link of TOP_LINKS) {
+    if (link.id === 'dashboard') continue;
+    if (['manage-users', 'roles', 'logs-page', 'ed-notes'].includes(link.id)) {
+      // placed intentionally below / in groups
+      continue;
+    }
+    if (privs.has(link.privilege) && !menu.some((m) => m.id === link.id)) {
+      menu.push(stripPrivilegeMeta(link));
+    }
+  }
+
+  if (privs.has('menu.ed_notes') && !menu.some((m) => m.id === 'ed-notes')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'ed-notes')));
+  }
+  if (privs.has('menu.users') && !menu.some((m) => m.id === 'manage-users' || m.id === 'users')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'manage-users')));
+  }
+  if (privs.has('menu.roles') && !menu.some((m) => m.id === 'roles')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'roles')));
+  }
+  if (privs.has('menu.logs') && !menu.some((m) => m.id === 'logs-page' || m.id === 'logs')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'logs-page')));
+  }
+
+  const createChildren = filterByPrivilege(CREATE_ITEMS, privs).map(stripPrivilegeMeta);
+  if (createChildren.length) menu.push({ id: 'create', label: 'Create', children: createChildren });
+
+  const viewChildren = filterByPrivilege(VIEW_ITEMS, privs).map(stripPrivilegeMeta);
+  if (viewChildren.length) menu.push({ id: 'view', label: 'View', children: viewChildren });
+
+  const generalChildren = filterByPrivilege(GENERAL_ITEMS, privs).map(stripPrivilegeMeta);
+  if (generalChildren.length) menu.push({ id: 'general', label: 'General', children: generalChildren });
+
+  if (privs.has('menu.inventory') && !menu.some((m) => m.id === 'inventory')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'inventory')));
+  }
+  if (privs.has('menu.procurement') && !menu.some((m) => m.id === 'procurement')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'procurement')));
+  }
+
+  const adminChildren = filterByPrivilege(ADMIN_SYSTEM_ITEMS, privs).map(stripPrivilegeMeta);
+  if (adminChildren.length) {
+    menu.push({ id: 'admin-system', label: 'System Settings', children: adminChildren });
+  }
+
+  if (privs.has('menu.permissions') && !menu.some((m) => m.id === 'permissions')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'permissions')));
+  }
+  if (privs.has('menu.subscribers') && !menu.some((m) => m.id === 'subscribers')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'subscribers')));
+  }
+  if (privs.has('menu.settings') && !menu.some((m) => m.id === 'settings')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'settings')));
+  }
+
   return menu;
 }
 
@@ -337,128 +210,111 @@ function collectPaths(items, into = []) {
 
 const ALWAYS_ALLOWED = ['/dashboard', '/dashboard/statistics', '/dashboard/profile', '/dashboard/notifications', '/dashboard/my-analysis'];
 
-export function canSeeAllDocumentsTab(role) {
-  return String(role || '').trim().toLowerCase() === 'ed';
+export function canReviewLists(user) {
+  return hasPrivilege(user, 'workflow.review');
 }
 
-export function canSeeMenuCounts(role) {
-  return String(role || '').trim().toLowerCase() === 'ed';
+export function canSeeMembershipAnalysis(user) {
+  return hasPrivilege(user, 'analysis.membership') || hasPrivilege(user, 'menu.analysis.membership');
 }
 
-export function canSeeVehicleReceived(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return ['membership coordinator', 'logistic', 'admin', 'ed', 'chairman'].includes(value);
+export function canSeeRequisitionAnalysis(user) {
+  return hasPrivilege(user, 'analysis.requisition') || hasPrivilege(user, 'menu.analysis.requisition');
 }
 
-export function canSeeAllTicketsTab(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return value === 'hr' || value === 'accountant' || value === 'admin';
+export function canSeeMembersAnalysis(user) {
+  return hasPrivilege(user, 'analysis.members') || hasPrivilege(user, 'menu.analysis.members');
 }
 
-export function canSeeAllMembershipReports(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return [
-    'ed',
-    'chairman',
-    'admin',
-    'accountant',
-    'assistant to ed',
-    'membership coordinator',
-    'logistic',
-    'membership r. supervisor',
-  ].includes(value);
+export function resolveRoleKey(role) {
+  return String(role || '').trim() || 'default';
 }
 
-export function isMembershipSupervisor(role) {
-  return String(role || '').trim().toLowerCase() === 'membership r. supervisor';
+export function canSeeAllDocumentsTab(user) {
+  return hasPrivilege(user, 'documents.view_all');
 }
 
-export function canCreateMembershipReport(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return [
-    'membership relations officer',
-    'membership_officer',
-    'membership officer',
-    'membership r. supervisor',
-  ].includes(value);
+export function canSeeMenuCounts(user) {
+  return hasPrivilege(user, 'dashboard.menu_counts');
 }
 
-export function canApproveMembershipReports(role) {
-  return String(role || '').trim().toLowerCase() === 'accountant';
+export function canSeeVehicleReceived(user) {
+  return hasPrivilege(user, 'vehicle.received.view');
 }
 
-export function canManageUsers(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return value === 'hr' || value === 'accountant' || value === 'admin' || value === 'ed' || value === 'chairman';
+export function canSeeAllTicketsTab(user) {
+  return hasPrivilege(user, 'tickets.view_all');
 }
 
-export function canSeeFinanceRequisitions(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return ['accountant', 'assistant to ed', 'assistant to the accountant'].includes(value);
+export function canSeeAllMembershipReports(user) {
+  return hasPrivilege(user, 'membership.reports.view_all');
 }
 
-/** Budget source and account code on requisitions — accountant roles only. */
-export function canEditRequisitionAccountFields(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return value === 'accountant' || value === 'assistant to the accountant';
+export function isMembershipSupervisor(user) {
+  return getEffectiveRoles(user).some((r) => String(r).toLowerCase() === 'membership r. supervisor');
 }
 
-const PROCUREMENT_FULL_ACCESS_EMAILS = [
-  'gnyirabahizi@rwvca.org.rw',
-  'ebizumuremyi@rwvca.org.rw',
-  'mukayisenga@rwvca.org.rw',
-];
+export function canCreateMembershipReport(user) {
+  return hasPrivilege(user, 'membership.reports.create') || hasPrivilege(user, 'menu.create.membership_report');
+}
 
-export function isProcurementOfficer(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return value === 'procurement officer' || value === 'procurement';
+export function canApproveMembershipReports(user) {
+  return hasPrivilege(user, 'membership.reports.approve');
+}
+
+export function canManageUsers(user) {
+  return hasPrivilege(user, 'users.manage');
+}
+
+export function canManageRoles(user) {
+  return hasPrivilege(user, 'roles.manage');
+}
+
+export function canSeeFinanceRequisitions(user) {
+  return hasPrivilege(user, 'finance.requisitions.view') || hasPrivilege(user, 'menu.view.finance_requisitions');
+}
+
+export function canEditRequisitionAccountFields(user) {
+  return hasPrivilege(user, 'finance.requisitions.account_fields');
+}
+
+export function isProcurementOfficer(user) {
+  return hasPrivilege(user, 'procurement.manage');
 }
 
 export function canAccessProcurement(userOrRole) {
   const user = typeof userOrRole === 'object' && userOrRole ? userOrRole : { role: userOrRole };
   const email = String(user.email || '').trim().toLowerCase();
   if (PROCUREMENT_FULL_ACCESS_EMAILS.includes(email)) return true;
-  const value = String(user.role || '').trim().toLowerCase();
-  return [
-    'procurement officer',
-    'procurement',
-    'project coordinator',
-    'membership coordinator',
-    'hr',
-    'admin',
-    'ed',
-    'chairman',
-  ].includes(value);
+  return hasPrivilege(user, 'procurement.access') || hasPrivilege(user, 'menu.procurement');
 }
 
 export function canManageProcurement(userOrRole) {
   const user = typeof userOrRole === 'object' && userOrRole ? userOrRole : { role: userOrRole };
   const email = String(user.email || '').trim().toLowerCase();
-  if (isProcurementOfficer(user.role)) return true;
   if (PROCUREMENT_FULL_ACCESS_EMAILS.includes(email)) return true;
-  const value = String(user.role || '').trim().toLowerCase();
-  return ['admin', 'ed', 'chairman'].includes(value);
+  return hasPrivilege(user, 'procurement.manage');
 }
 
-export function canManageMembers(role) {
-  const value = String(role || '').trim().toLowerCase();
-  return [
-    'ed',
-    'chairman',
-    'admin',
-    'membership coordinator',
-    'membership_officer',
-    'membership officer',
-    'logistic',
-    'membership r. supervisor',
-  ].includes(value);
+export function canManageMembers(user) {
+  return hasPrivilege(user, 'members.manage');
+}
+
+export function canManageAssets(user) {
+  return hasPrivilege(user, 'assets.manage');
+}
+
+export function canManageInventory(user) {
+  return hasPrivilege(user, 'inventory.manage');
 }
 
 export function canAccessPath(role, pathname, user = null) {
   const path = (pathname.replace(/\/$/, '') || '/dashboard').replace(/\/document$/, '');
+  const userObj = user || (role && typeof role === 'object' ? role : { role });
   if (ALWAYS_ALLOWED.includes(path)) return true;
-  if (path.startsWith('/dashboard/procurement') && canAccessProcurement(user || { role })) return true;
-  const allowed = collectPaths(getMenuForRole(role, user || { role }));
+  if (path.startsWith('/dashboard/roles') && canManageRoles(userObj)) return true;
+  if (path.startsWith('/dashboard/procurement') && canAccessProcurement(userObj)) return true;
+  const allowed = collectPaths(getMenuForRole(userObj.role || role, userObj));
   if (path.startsWith('/dashboard/ads') || path.startsWith('/dashboard/partners') || path.startsWith('/dashboard/platforms') || path.startsWith('/dashboard/team')) {
     return allowed.includes('/dashboard/website');
   }

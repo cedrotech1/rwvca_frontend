@@ -61,7 +61,7 @@ const emptyFilters = {
 
 export default function MembershipAnalysisPage() {
   const { user } = useAuth();
-  const allowed = canSeeMembershipAnalysis(user?.role);
+  const allowed = canSeeMembershipAnalysis(user);
   const [filters, setFilters] = useState({ ...emptyFilters });
   const [data, setData] = useState(null);
   const [error, setError] = useState('');

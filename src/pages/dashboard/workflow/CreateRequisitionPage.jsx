@@ -20,7 +20,7 @@ export default function CreateRequisitionPage() {
   const { id } = useParams();
   const editId = id ? String(id) : '';
   const isEdit = Boolean(editId);
-  const canAccountFields = canEditRequisitionAccountFields(user?.role);
+  const canAccountFields = canEditRequisitionAccountFields(user);
   const { departments, users } = useStaffOptions();
   const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [form, setForm] = useState({

@@ -10,7 +10,7 @@ import { AnalysisAccessDenied, ChartCard, Donut, HBar, StatCard, DataTable, Stat
 export default function MembersAnalysisPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const allowed = canSeeMembersAnalysis(user?.role);
+  const allowed = canSeeMembersAnalysis(user);
   const [year, setYear] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');

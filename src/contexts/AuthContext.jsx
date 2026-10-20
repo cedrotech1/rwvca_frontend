@@ -86,6 +86,22 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
   };
 
+  const refreshUser = useCallback(async () => {
+    const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!storedToken) return null;
+    try {
+      const response = await authService.getCurrentUser();
+      const userData = response?.data;
+      if (response?.success && userData) {
+        applySession(setToken, setUser, storedToken, userData);
+        return userData;
+      }
+    } catch {
+      // keep existing session
+    }
+    return null;
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -95,6 +111,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        refreshUser,
         dataRefreshTrigger,
         isAuthenticated: !!token && !!user,
       }}

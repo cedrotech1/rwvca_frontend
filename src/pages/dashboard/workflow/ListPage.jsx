@@ -50,11 +50,11 @@ export default function ListPage({
   const { user } = useAuth();
   const { users } = useStaffOptions();
   const visibleTabs = useMemo(() => tabs.filter((tab) => {
-    if (tab.reviewerOnly && !canReviewLists(user?.role)) return false;
-    if (tab.edOnly && !canSeeAllDocumentsTab(user?.role)) return false;
-    if (tab.vehicleReceivedOnly && !canSeeVehicleReceived(user?.role)) return false;
-    if (tab.hrAdminOnly && !canSeeAllTicketsTab(user?.role)) return false;
-    if (tab.membershipAllOnly && !canSeeAllMembershipReports(user?.role)) return false;
+    if (tab.reviewerOnly && !canReviewLists(user)) return false;
+    if (tab.edOnly && !canSeeAllDocumentsTab(user)) return false;
+    if (tab.vehicleReceivedOnly && !canSeeVehicleReceived(user)) return false;
+    if (tab.hrAdminOnly && !canSeeAllTicketsTab(user)) return false;
+    if (tab.membershipAllOnly && !canSeeAllMembershipReports(user)) return false;
     return true;
   }), [tabs, user?.role]);
   const [tab, setTab] = useState(defaultTab || visibleTabs[0]?.value || query.tab || '');
@@ -212,7 +212,7 @@ export default function ListPage({
                   onChange={(e) => setFilterValues((prev) => ({ ...prev, [filter.name]: e.target.value }))}
                 />
               ) : filter.type === 'applicant' ? (
-                canReviewLists(user?.role) ? (
+                canReviewLists(user) ? (
                   <select
                     className={`mt-1 ${inputClass}`}
                     value={filterValues[filter.name] || ''}

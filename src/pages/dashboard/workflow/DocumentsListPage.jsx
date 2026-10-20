@@ -13,7 +13,7 @@ export default function DocumentsListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const isEd = canSeeAllDocumentsTab(user?.role);
+  const isEd = canSeeAllDocumentsTab(user);
   const tab = searchParams.get('tab') || 'mine';
   const [items, setItems] = useState([]);
   const [tabCounts, setTabCounts] = useState({});

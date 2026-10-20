@@ -31,7 +31,7 @@ export default function LeaveReportsListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { users } = useStaffOptions();
-  const isHr = canReviewLists(user?.role);
+  const isHr = canReviewLists(user);
   const [tab, setTab] = useState('my');
   const [items, setItems] = useState([]);
   const [balance, setBalance] = useState(null);

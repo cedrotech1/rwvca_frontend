@@ -71,9 +71,9 @@ export default function TicketDetailPage() {
   const canAccess = item && (
     Number(item.created_by) === Number(user?.id)
     || Number(item.assigned_to) === Number(user?.id)
-    || canSeeAllTicketsTab(user?.role)
+    || canSeeAllTicketsTab(user)
   );
-  const canManage = canSeeAllTicketsTab(user?.role);
+  const canManage = canSeeAllTicketsTab(user);
   const canUpdateStatus = item && (
     Number(item.assigned_to) === Number(user?.id)
     || canManage

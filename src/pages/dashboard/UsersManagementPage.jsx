@@ -6,12 +6,26 @@ import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../..
 import api from '../../services/api';
 import { fileUrl } from '../../services/api/config';
 import { useAuth } from '../../contexts/AuthContext';
-import { canManageUsers, canReviewLists } from '../../utils/rwvcaAccess';
+import { canManageRoles, canManageUsers, canReviewLists } from '../../utils/rwvcaAccess';
 
-const emptyUser = { names: '', email: '', phone: '', gender: '', role: '', department_ID: '' };
+const emptyUser = { names: '', email: '', phone: '', gender: '', role: '', department_ID: '', acting_roles: [] };
 
-function isAdminActor(role) {
-  return ['admin', 'ed', 'chairman'].includes(String(role || '').trim().toLowerCase());
+function isAdminActor(userOrRole) {
+  const roles = Array.isArray(userOrRole?.effective_roles)
+    ? userOrRole.effective_roles
+    : Array.isArray(userOrRole?.acting_roles)
+      ? [userOrRole.role, ...userOrRole.acting_roles]
+      : [typeof userOrRole === 'object' ? userOrRole?.role : userOrRole];
+  return roles.some((role) => ['admin', 'ed', 'chairman'].includes(String(role || '').trim().toLowerCase()));
+}
+
+function toggleActingRole(list, roleName) {
+  const next = Array.isArray(list) ? [...list] : [];
+  const key = String(roleName || '').trim().toLowerCase();
+  const idx = next.findIndex((item) => String(item || '').trim().toLowerCase() === key);
+  if (idx >= 0) next.splice(idx, 1);
+  else next.push(roleName);
+  return next;
 }
 
 function signatureStatus(row) {
@@ -29,9 +43,10 @@ function accountStatus(row) {
 export default function UsersManagementPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const manager = canManageUsers(user?.role);
-  const adminActor = isAdminActor(user?.role);
-  const canAnalyze = canReviewLists(user?.role);
+  const manager = canManageUsers(user);
+  const rolesManager = canManageRoles(user);
+  const adminActor = isAdminActor(user);
+  const canAnalyze = canReviewLists(user);
   const [items, setItems] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -44,7 +59,6 @@ export default function UsersManagementPage() {
   const [form, setForm] = useState(emptyUser);
   const [leave, setLeave] = useState({ year: new Date().getFullYear(), allowed_days: 0, items: [] });
   const [deptForm, setDeptForm] = useState({ name: '' });
-  const [roleForm, setRoleForm] = useState({ role_name: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -99,6 +113,7 @@ export default function UsersManagementPage() {
       gender: row.gender || '',
       role: row.role || '',
       department_ID: row.department_ID || '',
+      acting_roles: Array.isArray(row.acting_roles) ? [...row.acting_roles] : [],
     });
     setModal('user');
   };
@@ -226,13 +241,6 @@ export default function UsersManagementPage() {
     await loadMeta();
   };
 
-  const saveRole = async (event) => {
-    event.preventDefault();
-    await api.post('/roles', roleForm);
-    setRoleForm({ role_name: '', description: '' });
-    await loadMeta();
-  };
-
   const columns = [
     { key: 'id', label: '#', render: (row, idx) => idx + 1 },
     {
@@ -247,7 +255,20 @@ export default function UsersManagementPage() {
     { key: 'phone', label: 'Phone' },
     { key: 'gender', label: 'Gender' },
     { key: 'active', label: 'Status', render: (row) => <StatusBadge value={accountStatus(row)} /> },
-    { key: 'role', label: 'Role', render: (row) => <StatusBadge value={row.role} /> },
+    {
+      key: 'role',
+      label: 'Roles',
+      render: (row) => (
+        <div className="space-y-1">
+          <StatusBadge value={row.role || '—'} />
+          {(row.acting_roles || []).length > 0 && (
+            <p className="text-[11px] text-gray-500 leading-snug">
+              Acting: {(row.acting_roles || []).join(', ')}
+            </p>
+          )}
+        </div>
+      ),
+    },
     { key: 'department', label: 'Department', render: (row) => row.department?.name || '—' },
     {
       key: 'signature_url',
@@ -275,14 +296,18 @@ export default function UsersManagementPage() {
       <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-4">
         <div className="flex flex-wrap gap-2 mb-4">
           {manager && (
-            <>
-              <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm" onClick={() => setModal('departments')}>
-                <Building2 size={14} /> Manage Departments
-              </button>
-              <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm" onClick={() => setModal('roles')}>
-                <Shield size={14} /> Manage Roles
-              </button>
-            </>
+            <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm" onClick={() => setModal('departments')}>
+              <Building2 size={14} /> Manage Departments
+            </button>
+          )}
+          {rolesManager && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-lg bg-[#2f5d31]/10 px-3 py-2 text-sm font-medium text-[#2f5d31]"
+              onClick={() => navigate('/dashboard/roles')}
+            >
+              <Shield size={14} /> Roles & Privileges
+            </button>
           )}
           <button
             type="button"
@@ -372,11 +397,53 @@ export default function UsersManagementPage() {
                 <option>Other</option>
               </select>
             </Field>
-            <Field label="Role *">
-              <select required className={inputClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                <option value="">Select role</option>
+            <Field label="Primary role *">
+              <select
+                required
+                className={inputClass}
+                value={form.role}
+                onChange={(e) => {
+                  const role = e.target.value;
+                  setForm({
+                    ...form,
+                    role,
+                    acting_roles: (form.acting_roles || []).filter(
+                      (item) => String(item || '').trim().toLowerCase() !== String(role || '').trim().toLowerCase()
+                    ),
+                  });
+                }}
+              >
+                <option value="">Select primary role</option>
                 {roleOptions.map((item) => <option key={item.id} value={item.role_name}>{item.role_name}</option>)}
               </select>
+            </Field>
+            <Field label="Acting roles (optional)">
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 p-2 space-y-1">
+                {roleOptions
+                  .filter((item) => String(item.role_name || '').trim().toLowerCase() !== String(form.role || '').trim().toLowerCase())
+                  .map((item) => {
+                    const checked = (form.acting_roles || []).some(
+                      (role) => String(role || '').trim().toLowerCase() === String(item.role_name || '').trim().toLowerCase()
+                    );
+                    return (
+                      <label key={`acting-${item.id}`} className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setForm({
+                            ...form,
+                            acting_roles: toggleActingRole(form.acting_roles, item.role_name),
+                          })}
+                        />
+                        {item.role_name}
+                      </label>
+                    );
+                  })}
+                {!roleOptions.length && <p className="text-xs text-gray-500">No roles available.</p>}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Primary role is the main job. Acting roles add extra menus and permissions (e.g. logistic + Membership Coordinator).
+              </p>
             </Field>
             {adminActor && form.id && String(form.role || '').toLowerCase() !== 'admin' && (
               <button
@@ -471,24 +538,6 @@ export default function UsersManagementPage() {
               <li key={item.id} className="py-2 flex justify-between">
                 <span>{item.name}</span>
                 <button type="button" className="text-rose-600" onClick={async () => { await api.del(`/departments/${item.id}`); await loadMeta(); }}>Delete</button>
-              </li>
-            ))}
-          </ul>
-        </Modal>
-      )}
-
-      {modal === 'roles' && (
-        <Modal title="Manage Roles" onClose={() => setModal(null)}>
-          <form onSubmit={saveRole} className="space-y-2 mb-4">
-            <input required className={inputClass} placeholder="Role name" value={roleForm.role_name} onChange={(e) => setRoleForm({ ...roleForm, role_name: e.target.value })} />
-            <input className={inputClass} placeholder="Description" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} />
-            <button className="rounded-lg bg-[#2f5d31] text-white px-4 py-2">Add role</button>
-          </form>
-          <ul className="divide-y divide-gray-100 text-sm">
-            {roles.map((item) => (
-              <li key={item.id} className="py-2 flex justify-between">
-                <span>{item.role_name}</span>
-                <button type="button" className="text-rose-600" onClick={async () => { await api.del(`/roles/${item.id}`); await loadMeta(); }}>Delete</button>
               </li>
             ))}
           </ul>

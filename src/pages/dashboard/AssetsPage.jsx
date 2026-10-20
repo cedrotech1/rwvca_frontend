@@ -7,9 +7,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { inputClass, labelClass, DataTable, StatusBadge } from '../../components/ui/dataUi';
 import { cellValue, formatPhpDate, formatPhpDateTime } from './workflow/helpers';
+import { canManageAssets as userCanManageAssets } from '../../utils/rwvcaAccess';
 
-const normalizeRole = (role) => String(role || '').trim().toLowerCase();
-const canManageAssets = (user) => ['logistic', 'membership coordinator'].includes(normalizeRole(user?.role));
+const canManageAssets = (user) => userCanManageAssets(user);
 
 const emptyCreateForm = {
   asset_type_id: '',

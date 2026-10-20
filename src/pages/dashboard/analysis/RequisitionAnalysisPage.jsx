@@ -11,7 +11,7 @@ import { formatPhpDateTime } from '../workflow/helpers';
 export default function RequisitionAnalysisPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const allowed = canSeeRequisitionAnalysis(user?.role);
+  const allowed = canSeeRequisitionAnalysis(user);
   const [year, setYear] = useState(new Date().getFullYear());
   const [data, setData] = useState(null);
   const [error, setError] = useState('');

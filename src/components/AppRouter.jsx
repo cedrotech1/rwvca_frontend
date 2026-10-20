@@ -24,6 +24,7 @@ import AssetsPage from '../pages/dashboard/AssetsPage';
 import WebsiteSettingsPage from '../pages/dashboard/WebsiteSettingsPage';
 import EdFullAccessPage from '../pages/dashboard/EdFullAccessPage';
 import UsersManagementPage from '../pages/dashboard/UsersManagementPage';
+import RolesPrivilegesPage from '../pages/dashboard/RolesPrivilegesPage';
 import MembersListPage from '../pages/dashboard/members/MembersListPage';
 import MemberFormPage from '../pages/dashboard/members/MemberFormPage';
 import MemberViewPage from '../pages/dashboard/members/MemberViewPage';
@@ -232,6 +233,7 @@ export const AppRouter = () => (
         <Route path="platforms" element={<PlatformsCmsPage />} />
         <Route path="team" element={<TeamCmsPage />} />
         <Route path="users" element={<UsersManagementPage />} />
+        <Route path="roles" element={<RolesPrivilegesPage />} />
         <Route path="website" element={<WebsiteSettingsPage />} />
         <Route path="finance-requisitions" element={<FinanceRequisitionsListPage />} />
         <Route path="membership-reports" element={<MembershipReportsListPage />} />

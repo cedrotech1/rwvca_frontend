@@ -18,7 +18,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 export const DashboardPage = () => {
   const { user } = useAuth();
-  const isHr = canReviewLists(user?.role);
+  const isHr = canReviewLists(user);
   const now = new Date();
   const [period, setPeriod] = useState('all');
   const [year, setYear] = useState(now.getFullYear());

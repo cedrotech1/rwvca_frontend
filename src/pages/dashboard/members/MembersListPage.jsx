@@ -59,7 +59,7 @@ const COLUMN_OPTIONS = COLUMN_GROUPS.flatMap((group) => group.items);
 export default function MembersListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const manager = canManageMembers(user?.role);
+  const manager = canManageMembers(user);
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState({ total: 0, paid: 0, active: 0, showing: 0 });
   const [platforms, setPlatforms] = useState([]);

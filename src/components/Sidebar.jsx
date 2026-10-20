@@ -169,7 +169,13 @@ export const Sidebar = ({ collapsed = false }) => {
   const { unreadCount } = useNotifications();
   const pendingProfile = needsProfileCompletion(user);
   const menu = pendingProfile ? PENDING_PROFILE_MENU : getMenuForRole(user?.role, user);
-  const showCounts = !pendingProfile && canSeeMenuCounts(user?.role);
+  const showCounts = !pendingProfile && canSeeMenuCounts(user);
+  const roleCaption = (() => {
+    const primary = user?.role || 'Staff dashboard';
+    const acting = Array.isArray(user?.acting_roles) ? user.acting_roles.filter(Boolean) : [];
+    if (!acting.length) return primary;
+    return `${primary} · acting: ${acting.join(', ')}`;
+  })();
   const [counts, setCounts] = useState({});
   const [openGroupId, setOpenGroupId] = useState(() => {
     const active = menu.find((item) => item.children && groupHasActive(location.pathname, item.children));
@@ -179,7 +185,7 @@ export const Sidebar = ({ collapsed = false }) => {
   useEffect(() => {
     const active = menu.find((item) => item.children && groupHasActive(location.pathname, item.children));
     setOpenGroupId(active?.id || null);
-  }, [location.pathname, user?.role]);
+  }, [location.pathname, user?.role, user?.acting_roles, user?.privilege_codes]);
 
   useEffect(() => {
     if (pendingProfile) return;
@@ -211,7 +217,7 @@ export const Sidebar = ({ collapsed = false }) => {
           <img src="/rwvca-logo.png" alt="RWVCA" className="h-9 w-auto" />
           <div className={collapsed ? 'lg:hidden' : ''}>
             <p className="text-sm font-bold text-[#2f5d31] leading-tight">RWVCA</p>
-            <p className="text-[11px] text-gray-500">{user?.role || 'Staff dashboard'}</p>
+            <p className="text-[11px] text-gray-500 leading-snug" title={roleCaption}>{roleCaption}</p>
           </div>
         </div>
       </div>

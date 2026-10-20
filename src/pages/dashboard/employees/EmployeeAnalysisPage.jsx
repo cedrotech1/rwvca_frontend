@@ -111,7 +111,7 @@ export default function EmployeeAnalysisPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { departments } = useStaffOptions();
-  const isHr = canReviewLists(user?.role);
+  const isHr = canReviewLists(user);
   const isSelf = id && Number(id) === Number(user?.id);
   const canView = isHr || isSelf;
   const [year, setYear] = useState(new Date().getFullYear());
