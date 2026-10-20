@@ -190,6 +190,7 @@ export const AppRouter = () => (
         <Route path="membership-reports/:id/edit" element={<CreateMembershipReportPage />} />
 
         <Route path="requisitions" element={<RequisitionsListPage />} />
+        <Route path="requisitions/:id/edit" element={<CreateRequisitionPage />} />
         <Route path="requisitions/:id" element={<RequisitionDetailPage />} />
         <Route path="special-requisitions" element={<VehicleListPage />} />
         <Route path="special-requisitions/:id" element={<VehicleDetailPage />} />

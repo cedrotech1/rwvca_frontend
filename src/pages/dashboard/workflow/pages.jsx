@@ -275,6 +275,11 @@ export const RequisitionsListPage = () => (
     apiPath="/requisitions"
     openTo="/dashboard/requisitions"
     createTo="/dashboard/create/requisitions"
+    editTo="/dashboard/requisitions/:id/edit"
+    canEditRow={(row, user) => (
+      Number(row.prepared_by) === Number(user?.id)
+      && ['draft', 'reverted', 'pending'].includes(String(row.status || '').toLowerCase())
+    )}
     tabs={[
       { value: 'my', label: 'My Requisitions' },
       { value: 'received', label: 'Received' },
@@ -561,6 +566,7 @@ export const RequisitionDetailPage = () => (
     title="Requisition"
     apiPath="/requisitions"
     backTo="/dashboard/requisitions"
+    editTo="/dashboard/requisitions/:id/edit"
     workflow="requisition"
     documentTo="/dashboard/requisitions/:id/document"
     logsKey="requisition_logs_requisition_id"

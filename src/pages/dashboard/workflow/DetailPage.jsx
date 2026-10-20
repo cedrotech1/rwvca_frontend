@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ClipboardList, Download, FileText, Printer } from 'lucide-react';
+import { ClipboardList, Download, FileText, Pencil, Printer } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { DataTable, StatusBadge, inputClass, labelClass } from '../../../components/ui/dataUi';
 import api from '../../../services/api';
@@ -117,6 +117,7 @@ export default function DetailPage({
   replyThreadKey,
   onLoad,
   renderMeta,
+  editTo,
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -246,6 +247,14 @@ export default function DetailPage({
   const shares = sharesKey ? (item?.[sharesKey] || []) : [];
   const replyTree = replyThreadKey ? (item?.[replyThreadKey] || []) : [];
   const headingActions = [];
+  if (editTo && item?.permissions?.can_edit) {
+    headingActions.push({
+      label: 'Edit',
+      variant: 'primary',
+      icon: <Pencil className="h-4 w-4" />,
+      onClick: () => navigate(editTo.replace(':id', id)),
+    });
+  }
   if (documentTo) {
     headingActions.push({
       label: documentButtonLabel,

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Trash2, Download, FileText, List } from 'lucide-react';
+import { Eye, Trash2, Download, FileText, List, Pencil } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { DataTable, StatusBadge, exportCsv, inputClass } from '../../../components/ui/dataUi';
 import api from '../../../services/api';
@@ -41,7 +41,9 @@ export default function ListPage({
   fileKey,
   fileDownloadApi,
   documentTo,
+  editTo,
   canDeleteRow,
+  canEditRow,
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -56,18 +58,21 @@ export default function ListPage({
   }), [tabs, user?.role]);
   const [tab, setTab] = useState(defaultTab || visibleTabs[0]?.value || query.tab || '');
   const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState({});
   const [tabCounts, setTabCounts] = useState({});
   const [error, setError] = useState('');
 
+  const listLimit = tab === 'all' ? 1000 : 200;
+
   const params = () => ({
     ...query,
     ...cleanParams(filterValues),
     ...(tab ? { tab } : {}),
     search,
-    limit: 50,
+    limit: listLimit,
   });
 
   const load = async () => {
@@ -75,6 +80,7 @@ export default function ListPage({
     try {
       const res = await api.get(apiPath, params());
       setItems(res.data?.items || res.data || []);
+      setTotal(res.data?.pagination?.total ?? (res.data?.items || res.data || []).length);
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Could not load records');
@@ -115,8 +121,11 @@ export default function ListPage({
     setSearch('');
     setFilterValues({});
     setTimeout(() => {
-      api.get(apiPath, { ...query, ...(tab ? { tab } : {}), search: '', limit: 50 })
-        .then((res) => setItems(res.data?.items || res.data || []))
+      api.get(apiPath, { ...query, ...(tab ? { tab } : {}), search: '', limit: listLimit })
+        .then((res) => {
+          setItems(res.data?.items || res.data || []);
+          setTotal(res.data?.pagination?.total ?? (res.data?.items || res.data || []).length);
+        })
         .catch((err) => setError(err.response?.data?.message || 'Could not load records'));
     }, 0);
   };
@@ -237,6 +246,12 @@ export default function ListPage({
         </form>
 
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {!loading && !error && (
+          <p className="text-xs text-gray-500 mb-3">
+            Showing {items.length} of {total} record{total === 1 ? '' : 's'}
+            {tab === 'all' ? ' (All Requisitions)' : ''}
+          </p>
+        )}
         {loading && !items.length ? (
           <div className="space-y-3 py-2">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -257,6 +272,15 @@ export default function ListPage({
               >
                 <Eye size={14} /> View
               </button>
+              {editTo && canEditRow?.(row, user) && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-amber-700 font-medium mr-2"
+                  onClick={() => navigate(editTo.replace(':id', row.id))}
+                >
+                  <Pencil size={14} /> Edit
+                </button>
+              )}
               {documentTo && (
                 <button
                   type="button"
