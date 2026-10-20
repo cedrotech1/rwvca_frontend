@@ -318,6 +318,8 @@ export default function DetailPage({
         <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-6 space-y-3">
           {fields.map((field) => {
             const value = nested(item, field.key);
+            const empty = value === null || value === undefined || value === '' || value === '—';
+            if (field.hideWhenEmpty && empty) return null;
             return (
               <div key={field.key} className="grid sm:grid-cols-3 gap-2 py-2 border-b border-gray-100 last:border-0">
                 <p className="text-sm text-gray-500">{field.label}</p>

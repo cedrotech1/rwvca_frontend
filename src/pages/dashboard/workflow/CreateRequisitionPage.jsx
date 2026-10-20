@@ -192,12 +192,16 @@ export default function CreateRequisitionPage() {
             </>
           ) : (
             <>
-              <label className={labelClass}>Budget Source
-                <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.budget_source || 'Set by accountant'} />
-              </label>
-              <label className={labelClass}>Account Code
-                <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.account_code || 'Set by accountant'} />
-              </label>
+              {form.budget_source ? (
+                <label className={labelClass}>Budget Source
+                  <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.budget_source} />
+                </label>
+              ) : null}
+              {form.account_code ? (
+                <label className={labelClass}>Account Code
+                  <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.account_code} />
+                </label>
+              ) : null}
             </>
           )}
           <label className={`${labelClass} sm:col-span-2`}>Send To (Verifier)
