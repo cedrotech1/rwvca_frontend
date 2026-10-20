@@ -276,10 +276,7 @@ export const RequisitionsListPage = () => (
     openTo="/dashboard/requisitions"
     createTo="/dashboard/create/requisitions"
     editTo="/dashboard/requisitions/:id/edit"
-    canEditRow={(row, user) => (
-      Number(row.prepared_by) === Number(user?.id)
-      && ['draft', 'reverted', 'pending'].includes(String(row.status || '').toLowerCase())
-    )}
+    canEditRow={() => true}
     tabs={[
       { value: 'my', label: 'My Requisitions' },
       { value: 'received', label: 'Received' },
