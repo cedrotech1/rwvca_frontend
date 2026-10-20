@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ClipboardList, Download, FileText, Pencil, Printer } from 'lucide-react';
+import { ClipboardList, Download, FileText, Pencil, Printer, Trash2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { DataTable, StatusBadge, inputClass, labelClass } from '../../../components/ui/dataUi';
 import api from '../../../services/api';
@@ -118,6 +118,7 @@ export default function DetailPage({
   onLoad,
   renderMeta,
   editTo,
+  allowDelete = false,
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -253,6 +254,22 @@ export default function DetailPage({
       variant: 'primary',
       icon: <Pencil className="h-4 w-4" />,
       onClick: () => navigate(editTo.replace(':id', id)),
+    });
+  }
+  if (allowDelete && item?.permissions?.can_delete) {
+    headingActions.push({
+      label: 'Delete',
+      variant: 'danger',
+      icon: <Trash2 className="h-4 w-4" />,
+      onClick: async () => {
+        if (!window.confirm('Delete this requisition? This cannot be undone.')) return;
+        try {
+          await api.del(`${apiPath}/${id}`);
+          navigate(backTo);
+        } catch (err) {
+          setError(err.response?.data?.message || 'Could not delete');
+        }
+      },
     });
   }
   if (documentTo) {

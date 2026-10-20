@@ -397,6 +397,12 @@ export function canSeeFinanceRequisitions(role) {
   return ['accountant', 'assistant to ed', 'assistant to the accountant'].includes(value);
 }
 
+/** Budget source and account code on requisitions — accountant roles only. */
+export function canEditRequisitionAccountFields(role) {
+  const value = String(role || '').trim().toLowerCase();
+  return value === 'accountant' || value === 'assistant to the accountant';
+}
+
 const PROCUREMENT_FULL_ACCESS_EMAILS = [
   'gnyirabahizi@rwvca.org.rw',
   'ebizumuremyi@rwvca.org.rw',

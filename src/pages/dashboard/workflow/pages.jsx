@@ -277,6 +277,8 @@ export const RequisitionsListPage = () => (
     createTo="/dashboard/create/requisitions"
     editTo="/dashboard/requisitions/:id/edit"
     canEditRow={() => true}
+    canDeleteRow={() => true}
+    actionsIconOnly
     tabs={[
       { value: 'my', label: 'My Requisitions' },
       { value: 'received', label: 'Received' },
@@ -564,6 +566,7 @@ export const RequisitionDetailPage = () => (
     apiPath="/requisitions"
     backTo="/dashboard/requisitions"
     editTo="/dashboard/requisitions/:id/edit"
+    allowDelete
     workflow="requisition"
     documentTo="/dashboard/requisitions/:id/document"
     logsKey="requisition_logs_requisition_id"

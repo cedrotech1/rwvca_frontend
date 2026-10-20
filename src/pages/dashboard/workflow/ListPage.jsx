@@ -44,6 +44,7 @@ export default function ListPage({
   editTo,
   canDeleteRow,
   canEditRow,
+  actionsIconOnly = false,
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -267,27 +268,33 @@ export default function ListPage({
             <>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-[#2f5d31] font-medium mr-2"
+                title="View"
+                aria-label="View"
+                className={`inline-flex items-center gap-1 text-[#2f5d31] font-medium mr-2 ${actionsIconOnly ? 'p-1.5 rounded-md hover:bg-green-50' : ''}`}
                 onClick={() => openRow(row)}
               >
-                <Eye size={14} /> View
+                <Eye size={16} />{actionsIconOnly ? null : ' View'}
               </button>
               {editTo && canEditRow?.(row, user) && (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-amber-700 font-medium mr-2"
+                  title="Edit"
+                  aria-label="Edit"
+                  className={`inline-flex items-center gap-1 text-amber-700 font-medium mr-2 ${actionsIconOnly ? 'p-1.5 rounded-md hover:bg-amber-50' : ''}`}
                   onClick={() => navigate(editTo.replace(':id', row.id))}
                 >
-                  <Pencil size={14} /> Edit
+                  <Pencil size={16} />{actionsIconOnly ? null : ' Edit'}
                 </button>
               )}
               {documentTo && (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-emerald-700 font-medium mr-2"
+                  title="Document"
+                  aria-label="Document"
+                  className={`inline-flex items-center gap-1 text-emerald-700 font-medium mr-2 ${actionsIconOnly ? 'p-1.5 rounded-md hover:bg-emerald-50' : ''}`}
                   onClick={() => navigate(documentTo.replace(':id', row.id))}
                 >
-                  <FileText size={14} /> Document
+                  <FileText size={16} />{actionsIconOnly ? null : ' Document'}
                 </button>
               )}
               {letterKey && row[letterKey] && (
@@ -318,10 +325,12 @@ export default function ListPage({
               {canDeleteRow?.(row, user) && (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-red-600 font-medium"
+                  title="Delete"
+                  aria-label="Delete"
+                  className={`inline-flex items-center gap-1 text-red-600 font-medium ${actionsIconOnly ? 'p-1.5 rounded-md hover:bg-red-50' : ''}`}
                   onClick={() => deleteRow(row)}
                 >
-                  <Trash2 size={14} /> Delete
+                  <Trash2 size={16} />{actionsIconOnly ? null : ' Delete'}
                 </button>
               )}
             </>

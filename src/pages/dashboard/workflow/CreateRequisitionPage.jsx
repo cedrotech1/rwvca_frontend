@@ -4,8 +4,11 @@ import { ClipboardList, Plus, Trash2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
+import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
+import { canEditRequisitionAccountFields } from '../../../utils/rwvcaAccess';
 import { useStaffOptions } from './helpers';
+import { moneyWords } from './OfficialDocument';
 
 function emptyItem() {
   return { description: '', quantity: 1, unit_price: 0 };
@@ -13,9 +16,11 @@ function emptyItem() {
 
 export default function CreateRequisitionPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { id } = useParams();
   const editId = id ? String(id) : '';
   const isEdit = Boolean(editId);
+  const canAccountFields = canEditRequisitionAccountFields(user?.role);
   const { departments, users } = useStaffOptions();
   const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
   const [form, setForm] = useState({
@@ -35,6 +40,11 @@ export default function CreateRequisitionPage() {
     () => items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0),
     [items]
   );
+  const amountInWords = useMemo(() => moneyWords(grandTotal), [grandTotal]);
+
+  useEffect(() => {
+    setForm((prev) => (prev.amount_in_words === amountInWords ? prev : { ...prev, amount_in_words: amountInWords }));
+  }, [amountInWords]);
 
   useEffect(() => {
     if (!isEdit) return undefined;
@@ -92,7 +102,14 @@ export default function CreateRequisitionPage() {
 
       setSaving(true);
       const payload = {
-        ...form,
+        date: form.date,
+        department_id: form.department_id,
+        sended_to: form.sended_to,
+        amount_in_words: amountInWords,
+        ...(canAccountFields ? {
+          budget_source: form.budget_source,
+          account_code: form.account_code,
+        } : {}),
         action: action === 'draft' ? 'draft' : (isEdit ? 'submit' : 'submit'),
         ...(priority ? { priority } : {}),
         total_amount_requested: grandTotal,
@@ -164,12 +181,25 @@ export default function CreateRequisitionPage() {
               {departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
-          <label className={labelClass}>Budget Source
-            <input required placeholder="e.g., Annual Budget 2024" className={`mt-1 ${inputClass}`} value={form.budget_source} onChange={(e) => setForm({ ...form, budget_source: e.target.value })} />
-          </label>
-          <label className={labelClass}>Account Code
-            <input required placeholder="e.g., 50100" className={`mt-1 ${inputClass}`} value={form.account_code} onChange={(e) => setForm({ ...form, account_code: e.target.value })} />
-          </label>
+          {canAccountFields ? (
+            <>
+              <label className={labelClass}>Budget Source
+                <input placeholder="e.g., Annual Budget 2024" className={`mt-1 ${inputClass}`} value={form.budget_source} onChange={(e) => setForm({ ...form, budget_source: e.target.value })} />
+              </label>
+              <label className={labelClass}>Account Code
+                <input placeholder="e.g., 50100" className={`mt-1 ${inputClass}`} value={form.account_code} onChange={(e) => setForm({ ...form, account_code: e.target.value })} />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className={labelClass}>Budget Source
+                <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.budget_source || 'Set by accountant'} />
+              </label>
+              <label className={labelClass}>Account Code
+                <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={form.account_code || 'Set by accountant'} />
+              </label>
+            </>
+          )}
           <label className={`${labelClass} sm:col-span-2`}>Send To (Verifier)
             <select required className={`mt-1 ${inputClass}`} value={form.sended_to} onChange={(e) => setForm({ ...form, sended_to: e.target.value })}>
               <option value="">Select verifier</option>
@@ -219,12 +249,12 @@ export default function CreateRequisitionPage() {
         </div>
 
         <label className={`${labelClass} block`}>Amount in Words
-          <input className={`mt-1 ${inputClass}`} value={form.amount_in_words} onChange={(e) => setForm({ ...form, amount_in_words: e.target.value })} />
+          <input readOnly className={`mt-1 ${inputClass} bg-gray-50`} value={amountInWords} />
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex flex-wrap gap-3">
           <button type="button" disabled={saving || Boolean(error && isEdit && error.includes('permission'))} onClick={(e) => submit(e, 'draft')} className="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : (isEdit ? 'Save changes' : 'Save as Draft')}</button>
-          <button type="button" disabled={saving || Boolean(error && isEdit && error.includes('permission'))} onClick={(e) => submit(e, 'submit')} className="bg-[#2f5d31] text-white px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : (isEdit ? 'Submit & notify' : 'Submit & notify')}</button>
+          <button type="button" disabled={saving || Boolean(error && isEdit && error.includes('permission'))} onClick={(e) => submit(e, 'submit')} className="bg-[#2f5d31] text-white px-5 py-2.5 rounded-lg font-medium">{saving ? 'Saving...' : 'Submit & notify'}</button>
         </div>
       </form>
     </div>
