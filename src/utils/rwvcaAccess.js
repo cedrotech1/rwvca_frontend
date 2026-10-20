@@ -65,7 +65,6 @@ const TOP_LINKS = [
   { id: 'ed-full-access', label: 'Full Access', path: '/dashboard/ed-full-access', privilege: 'menu.ed_full_access' },
   { id: 'ed-notes', label: 'ED Notes', path: '/dashboard/ed-notes', privilege: 'menu.ed_notes' },
   { id: 'manage-users', label: 'User Management', path: '/dashboard/users', privilege: 'menu.users' },
-  { id: 'roles', label: 'Roles & Privileges', path: '/dashboard/roles', privilege: 'menu.roles' },
   { id: 'logs-page', label: 'Logs Page', path: '/dashboard/logs', privilege: 'menu.logs' },
   { id: 'members', label: 'Members', path: '/dashboard/members', privilege: 'menu.members' },
   { id: 'inventory', label: 'Inventory', path: '/dashboard/inventory', privilege: 'menu.inventory' },
@@ -144,7 +143,7 @@ export function getMenuForRole(role, user = null) {
 
   for (const link of TOP_LINKS) {
     if (link.id === 'dashboard') continue;
-    if (['manage-users', 'roles', 'logs-page', 'ed-notes'].includes(link.id)) {
+    if (['manage-users', 'logs-page', 'ed-notes'].includes(link.id)) {
       // placed intentionally below / in groups
       continue;
     }
@@ -159,9 +158,7 @@ export function getMenuForRole(role, user = null) {
   if (privs.has('menu.users') && !menu.some((m) => m.id === 'manage-users' || m.id === 'users')) {
     menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'manage-users')));
   }
-  if (privs.has('menu.roles') && !menu.some((m) => m.id === 'roles')) {
-    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'roles')));
-  }
+  // Roles & Privileges stays under System Settings only (not a top-level / post-login page).
   if (privs.has('menu.logs') && !menu.some((m) => m.id === 'logs-page' || m.id === 'logs')) {
     menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'logs-page')));
   }

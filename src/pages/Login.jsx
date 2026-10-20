@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sanitizeRedirectPath } from '../utils/appPaths';
+import { canAccessPath } from '../utils/rwvcaAccess';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -24,7 +25,11 @@ export const Login = () => {
         if (result.user?.needs_profile_completion || Number(result.user?.active) !== 1) {
           navigate('/dashboard/profile', { replace: true });
         } else {
-          navigate(redirect || '/dashboard', { replace: true });
+          const target =
+            redirect && canAccessPath(result.user?.role, redirect, result.user)
+              ? redirect
+              : '/dashboard';
+          navigate(target, { replace: true });
         }
       } else setError(result.message || 'Login failed');
     } catch {

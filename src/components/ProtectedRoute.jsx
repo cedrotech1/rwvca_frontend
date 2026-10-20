@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sanitizeRedirectPath } from '../utils/appPaths';
+import { canAccessPath } from '../utils/rwvcaAccess';
 
 export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -25,7 +26,7 @@ export const ProtectedRoute = ({ children }) => {
 };
 
 export const GuestRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const [searchParams] = useSearchParams();
 
   if (loading) {
@@ -38,7 +39,9 @@ export const GuestRoute = ({ children }) => {
 
   if (isAuthenticated) {
     const redirect = sanitizeRedirectPath(searchParams.get('redirect'));
-    return <Navigate to={redirect || '/dashboard'} replace />;
+    const target =
+      redirect && canAccessPath(user?.role, redirect, user) ? redirect : '/dashboard';
+    return <Navigate to={target} replace />;
   }
 
   return children;

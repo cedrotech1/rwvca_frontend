@@ -6,7 +6,6 @@ import { HighPriorityReminderAlert } from './HighPriorityReminderAlert';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessPath } from '../utils/rwvcaAccess';
 import { needsProfileCompletion } from '../utils/profileCompleteness';
-import { AccessDenied } from '../pages/AccessDenied';
 import { Navigate } from 'react-router-dom';
 
 const SIDEBAR_COLLAPSED_KEY = 'rwvca-sidebar-collapsed';
@@ -88,7 +87,7 @@ export const DashboardLayout = () => {
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-150 p-4 lg:p-6 mt-16">
           {canAccessPath(user?.role, location.pathname, user) || (pendingProfile && onProfilePage)
             ? <Outlet />
-            : <AccessDenied />}
+            : <Navigate to="/dashboard" replace />}
         </main>
       </div>
     </div>
