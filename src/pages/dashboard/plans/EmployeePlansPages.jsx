@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Activity,
   BarChart3,
   CalendarRange,
   Eye,
   Plus,
+  Search,
+  Trash2,
+  Users,
+  X,
 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichHtml from '../../../components/RichHtml';
 import RichTextEditor from '../../../components/RichTextEditor';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -20,7 +26,7 @@ function useUsersAndDepartments() {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   useEffect(() => {
-    api.get('/users', { limit: 300, active: 1 }).then((res) => {
+    api.get('/users', { limit: 500, active: 1 }).then((res) => {
       setUsers(res.data?.items || res.data || []);
     }).catch(() => {});
     api.get('/departments', { limit: 200 }).then((res) => {
@@ -30,7 +36,81 @@ function useUsersAndDepartments() {
   return { users, departments };
 }
 
-function PlanForm({ initial, onSaved, onCancel }) {
+function CollaboratorPicker({ users, selectedIds, onChange, excludeUserId }) {
+  const [q, setQ] = useState('');
+  const selected = useMemo(() => new Set(selectedIds.map(Number)), [selectedIds]);
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return users
+      .filter((u) => Number(u.id) !== Number(excludeUserId))
+      .filter((u) => {
+        if (!needle) return true;
+        return (
+          String(u.names || '').toLowerCase().includes(needle)
+          || String(u.email || '').toLowerCase().includes(needle)
+          || String(u.role || '').toLowerCase().includes(needle)
+        );
+      })
+      .slice(0, 80);
+  }, [users, q, excludeUserId]);
+
+  const toggle = (userId) => {
+    const id = Number(userId);
+    if (selected.has(id)) onChange(selectedIds.filter((x) => Number(x) !== id));
+    else onChange([...selectedIds, id]);
+  };
+
+  const selectedUsers = users.filter((u) => selected.has(Number(u.id)));
+
+  return (
+    <div className="space-y-3 rounded-xl ring-1 ring-gray-200 bg-gray-50/60 p-3">
+      <p className={labelClass}>Joint activity — search & select collaborators</p>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          className={`${inputClass} pl-9 bg-white`}
+          placeholder="Search by name, email, or role…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+      {selectedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedUsers.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => toggle(u.id)}
+              className="inline-flex items-center gap-1 rounded-full bg-[#2f5d31] px-2.5 py-1 text-xs font-medium text-white"
+            >
+              {u.names}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="max-h-52 overflow-y-auto rounded-lg bg-white ring-1 ring-gray-200 divide-y divide-gray-50">
+        {filtered.length === 0 ? (
+          <p className="p-3 text-sm text-gray-400">No staff match your search</p>
+        ) : (
+          filtered.map((u) => (
+            <label key={u.id} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[#2f5d31]/5">
+              <input type="checkbox" checked={selected.has(Number(u.id))} onChange={() => toggle(u.id)} />
+              <span className="font-medium text-gray-800">{u.names}</span>
+              <span className="text-xs text-gray-400">{u.role}</span>
+              <span className="ml-auto text-xs text-gray-400 truncate max-w-[140px]">{u.email}</span>
+            </label>
+          ))
+        )}
+      </div>
+      <p className="text-xs text-gray-500">
+        Selected collaborators get an immediate notification and can accept / decline with a reply.
+      </p>
+    </div>
+  );
+}
+
+function PlanForm({ initial, onSaved, onCancel, currentUserId }) {
   const { users } = useUsersAndDepartments();
   const [form, setForm] = useState(() => ({
     title: initial?.title || '',
@@ -44,20 +124,6 @@ function PlanForm({ initial, onSaved, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const toggleCollaborator = (userId) => {
-    const id = Number(userId);
-    setForm((prev) => {
-      const has = prev.collaborator_ids.includes(id);
-      return {
-        ...prev,
-        is_joint: true,
-        collaborator_ids: has
-          ? prev.collaborator_ids.filter((x) => x !== id)
-          : [...prev.collaborator_ids, id],
-      };
-    });
-  };
-
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -65,7 +131,7 @@ function PlanForm({ initial, onSaved, onCancel }) {
     try {
       const payload = {
         title: form.title.trim(),
-        description: form.description.trim() || null,
+        description: form.description || null,
         start_date: form.start_date,
         end_date: form.end_date,
         status: form.status,
@@ -76,16 +142,13 @@ function PlanForm({ initial, onSaved, onCancel }) {
       if (initial?.id) {
         const res = await api.put(`/employee-plans/${initial.id}`, payload);
         saved = res.data;
-        if (form.collaborator_ids) {
-          await api.put(`/employee-plans/${initial.id}/collaborators`, {
-            user_ids: form.collaborator_ids,
-          });
-          const refreshed = await api.get(`/employee-plans/${initial.id}`);
-          saved = refreshed.data;
-        }
+        await api.put(`/employee-plans/${initial.id}/collaborators`, { user_ids: form.collaborator_ids });
         if (form.status && form.status !== initial.status) {
           const statusRes = await api.post(`/employee-plans/${initial.id}/status`, { status: form.status });
           saved = statusRes.data;
+        } else {
+          const refreshed = await api.get(`/employee-plans/${initial.id}`);
+          saved = refreshed.data;
         }
       } else {
         const res = await api.post('/employee-plans', payload);
@@ -104,14 +167,14 @@ function PlanForm({ initial, onSaved, onCancel }) {
       {error && <p className="text-sm text-rose-600">{error}</p>}
       <div>
         <label className={labelClass}>Title *</label>
-        <input required className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <input required className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="What will you do?" />
       </div>
       <div>
-        <label className={labelClass}>Description</label>
+        <label className={labelClass}>Description / planned activity</label>
         <RichTextEditor
           value={form.description}
           onChange={(html) => setForm({ ...form, description: html })}
-          placeholder="Describe the planned activity…"
+          placeholder="Describe the planned activity (bullets, numbers, formatting supported)…"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -136,24 +199,17 @@ function PlanForm({ initial, onSaved, onCancel }) {
         <input
           type="checkbox"
           checked={form.is_joint || form.collaborator_ids.length > 0}
-          onChange={(e) => setForm({ ...form, is_joint: e.target.checked })}
+          onChange={(e) => setForm({ ...form, is_joint: e.target.checked, collaborator_ids: e.target.checked ? form.collaborator_ids : [] })}
         />
         Joint activity (select collaborators)
       </label>
       {(form.is_joint || form.collaborator_ids.length > 0) && (
-        <div className="max-h-48 overflow-y-auto rounded-lg ring-1 ring-gray-200 p-3 space-y-1">
-          {users.map((u) => (
-            <label key={u.id} className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={form.collaborator_ids.includes(Number(u.id))}
-                onChange={() => toggleCollaborator(u.id)}
-              />
-              {u.names}
-              <span className="text-xs text-gray-400">{u.role}</span>
-            </label>
-          ))}
-        </div>
+        <CollaboratorPicker
+          users={users}
+          selectedIds={form.collaborator_ids}
+          excludeUserId={currentUserId}
+          onChange={(ids) => setForm({ ...form, collaborator_ids: ids, is_joint: true })}
+        />
       )}
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={saving} className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
@@ -169,7 +225,7 @@ function PlanForm({ initial, onSaved, onCancel }) {
   );
 }
 
-function ReportGenerator({ departments }) {
+function ReportGenerator({ departments, monitor }) {
   const [form, setForm] = useState({
     report_type: 'WEEKLY',
     title: '',
@@ -181,17 +237,25 @@ function ReportGenerator({ departments }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [reports, setReports] = useState([]);
+  const [scope, setScope] = useState('mine');
+  const [deptSearch, setDeptSearch] = useState('');
 
   const loadReports = async () => {
     try {
-      const res = await api.get('/employee-plans/reports', { scope: 'mine', limit: 50 });
+      const res = await api.get('/employee-plans/reports', { scope, limit: 100 });
       setReports(res.data?.items || []);
     } catch {
       setReports([]);
     }
   };
 
-  useEffect(() => { loadReports().catch(() => {}); }, []);
+  useEffect(() => { loadReports().catch(() => {}); }, [scope]);
+
+  const filteredDepts = useMemo(() => {
+    const q = deptSearch.trim().toLowerCase();
+    if (!q) return departments;
+    return departments.filter((d) => String(d.name || '').toLowerCase().includes(q));
+  }, [departments, deptSearch]);
 
   const toggleDept = (id) => {
     const n = Number(id);
@@ -211,10 +275,10 @@ function ReportGenerator({ departments }) {
       await api.post('/employee-plans/reports', {
         ...form,
         title: form.title.trim(),
-        content: form.content.trim() || null,
+        content: form.content || null,
         shared_department_ids: form.shared_department_ids,
       });
-      setMessage({ type: 'success', text: 'Report created and shared with selected departments.' });
+      setMessage({ type: 'success', text: 'Report created. Shared departments were notified.' });
       setForm((prev) => ({ ...prev, title: '', content: '', shared_department_ids: [] }));
       await loadReports();
     } catch (err) {
@@ -261,10 +325,16 @@ function ReportGenerator({ departments }) {
             placeholder="Write the plan report content…"
           />
         </div>
-        <div>
-          <p className={labelClass}>Share to departments</p>
-          <div className="flex flex-wrap gap-2">
-            {departments.map((d) => (
+        <div className="space-y-2">
+          <p className={labelClass}>Share to departments (they get notified)</p>
+          <input
+            className={`${inputClass} max-w-sm`}
+            placeholder="Search departments…"
+            value={deptSearch}
+            onChange={(e) => setDeptSearch(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+            {filteredDepts.map((d) => (
               <label
                 key={d.id}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 cursor-pointer ${
@@ -285,22 +355,38 @@ function ReportGenerator({ departments }) {
           </div>
         </div>
         <button type="submit" disabled={saving} className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-          {saving ? 'Saving…' : 'Create report'}
+          {saving ? 'Saving…' : 'Create & share report'}
         </button>
       </form>
 
-      <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800 mb-3">My reports</h3>
+      <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-800">Reports</h3>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setScope('mine')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'mine' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>Mine</button>
+            <button type="button" onClick={() => setScope('shared')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'shared' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>Shared to my dept</button>
+            {monitor && (
+              <button type="button" onClick={() => setScope('all')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'all' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>All</button>
+            )}
+          </div>
+        </div>
         <DataTable
           empty="No reports yet"
           columns={[
             { key: 'report_type', label: 'Type' },
             { key: 'title', label: 'Title' },
+            { key: 'author', label: 'Author', value: (r) => r.author?.names || '—' },
             { key: 'period', label: 'Period', value: (r) => `${String(r.period_start || '').slice(0, 10)} → ${String(r.period_end || '').slice(0, 10)}` },
             { key: 'created_at', label: 'Created', value: (r) => String(r.created_at || '').slice(0, 10) },
           ]}
           rows={reports}
         />
+        {reports[0]?.content && (
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Latest report preview</p>
+            <RichHtml html={reports[0].content} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -316,7 +402,7 @@ export function EmployeePlansPage() {
       { value: 'mine', label: 'My plans' },
       { value: 'collaborations', label: 'Collaborations' },
     ];
-    if (monitor) list.push({ value: 'all', label: 'All' });
+    if (monitor) list.push({ value: 'all', label: 'All staff' });
     return list;
   }, [monitor]);
 
@@ -326,11 +412,18 @@ export function EmployeePlansPage() {
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [section, setSection] = useState('plans');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/employee-plans', { tab, limit: 200 });
+      const res = await api.get('/employee-plans', {
+        tab,
+        limit: 300,
+        search: search || undefined,
+        status: statusFilter || undefined,
+      });
       setItems(res.data?.items || []);
       setError('');
     } catch (err) {
@@ -341,7 +434,7 @@ export function EmployeePlansPage() {
     }
   };
 
-  useEffect(() => { load().catch(() => {}); }, [tab]);
+  useEffect(() => { load().catch(() => {}); }, [tab, statusFilter]);
 
   if (!hasPrivilege(user, 'menu.employee_plans') && !hasPrivilege(user, 'plans.manage')) {
     return (
@@ -349,12 +442,22 @@ export function EmployeePlansPage() {
     );
   }
 
+  const stats = useMemo(() => {
+    const by = Object.fromEntries(PLAN_STATUSES.map((s) => [s, 0]));
+    let joint = 0;
+    for (const p of items) {
+      if (by[p.status] !== undefined) by[p.status] += 1;
+      if (p.is_joint) joint += 1;
+    }
+    return { by, joint, total: items.length };
+  }, [items]);
+
   return (
     <div className="space-y-4">
       <PageHeading
         icon={<CalendarRange className="h-6 w-6" />}
         title="Employee Plans"
-        subtitle="Plan activities, collaborate, and generate shared reports"
+        subtitle="Plan activities, collaborate with notifications, comment, and share period reports"
         actions={[
           {
             label: showCreate ? 'Close form' : 'New plan',
@@ -364,37 +467,31 @@ export function EmployeePlansPage() {
         ]}
       />
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniStat label="Listed plans" value={stats.total} />
+        <MiniStat label="Joint" value={stats.joint} />
+        <MiniStat label="Ongoing" value={stats.by.ongoing} />
+        <MiniStat label="Complete" value={stats.by.complete} />
+        <MiniStat label="Draft / pending" value={(stats.by.draft || 0) + (stats.by.pending || 0)} />
+      </div>
+
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setSection('plans')}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'plans' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}
-        >
-          Plans
-        </button>
-        <button
-          type="button"
-          onClick={() => setSection('reports')}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'reports' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}
-        >
-          Reports
-        </button>
+        <button type="button" onClick={() => setSection('plans')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'plans' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Plans</button>
+        <button type="button" onClick={() => setSection('reports')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'reports' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Reports</button>
         {monitor && (
-          <Link
-            to="/dashboard/staff-monitoring"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-white ring-1 ring-gray-200 text-gray-700"
-          >
-            Staff monitoring
+          <Link to="/dashboard/staff-monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-[#2f5d31]/10 text-[#2f5d31] ring-1 ring-[#2f5d31]/30">
+            <BarChart3 className="h-4 w-4" /> Staff monitoring
           </Link>
         )}
       </div>
 
       {section === 'reports' ? (
-        <ReportGenerator departments={departments} />
+        <ReportGenerator departments={departments} monitor={monitor} />
       ) : (
         <>
           {showCreate && (
             <PlanForm
+              currentUserId={user?.id}
               onCancel={() => setShowCreate(false)}
               onSaved={(plan) => {
                 setShowCreate(false);
@@ -404,7 +501,7 @@ export function EmployeePlansPage() {
             />
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-end">
             {tabs.map((t) => (
               <button
                 key={t.value}
@@ -417,6 +514,17 @@ export function EmployeePlansPage() {
                 {t.label}
               </button>
             ))}
+            <form
+              className="ml-auto flex flex-wrap gap-2"
+              onSubmit={(e) => { e.preventDefault(); load(); }}
+            >
+              <select className={`${inputClass} w-auto`} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All statuses</option>
+                {PLAN_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <input className={`${inputClass} w-52`} placeholder="Search plans / owners…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <button type="submit" className="rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white">Search</button>
+            </form>
           </div>
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -429,25 +537,29 @@ export function EmployeePlansPage() {
               { key: 'owner', label: 'Owner', value: (r) => r.owner?.names || '—' },
               {
                 key: 'period',
-                label: 'Period',
+                label: 'Timeline',
                 value: (r) => `${String(r.start_date || '').slice(0, 10)} → ${String(r.end_date || '').slice(0, 10)}`,
               },
               { key: 'status', label: 'Status', value: (r) => <StatusBadge value={r.status} /> },
               {
                 key: 'joint',
-                label: 'Joint',
-                value: (r) => (r.is_joint ? `${(r.collaborators || []).length} collab.` : '—'),
+                label: 'Collaboration',
+                value: (r) => (r.is_joint ? (
+                  <span className="inline-flex items-center gap-1 text-cyan-700"><Users className="h-3.5 w-3.5" />{(r.collaborators || []).length}</span>
+                ) : 'Solo'),
               },
             ]}
             rows={items}
             renderActions={(row) => (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-sm font-medium text-[#2f5d31]"
-                onClick={() => navigate(`/dashboard/employee-plans/${row.id}`)}
-              >
-                <Eye className="h-4 w-4" /> Open
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[#2f5d31]"
+                  onClick={() => navigate(`/dashboard/employee-plans/${row.id}`)}
+                >
+                  <Eye className="h-4 w-4" /> View
+                </button>
+              </div>
             )}
           />
         </>
@@ -484,6 +596,7 @@ export function EmployeePlanDetailPage() {
   }
 
   const isOwner = Number(plan.user_id) === Number(user?.id);
+  const canManage = isOwner || canMonitorPlans(user);
   const myCollab = (plan.collaborators || []).find((c) => Number(c.user_id) === Number(user?.id));
   const pendingResponse = myCollab && myCollab.response_status === 'pending';
 
@@ -519,10 +632,10 @@ export function EmployeePlanDetailPage() {
 
   const addComment = async (event) => {
     event.preventDefault();
-    if (!comment.trim()) return;
+    if (!comment.trim() || comment === '<p></p>') return;
     setSaving(true);
     try {
-      await api.post(`/employee-plans/${id}/comments`, { comment: comment.trim() });
+      await api.post(`/employee-plans/${id}/comments`, { comment });
       setComment('');
       await load();
     } catch (err) {
@@ -533,7 +646,7 @@ export function EmployeePlanDetailPage() {
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete this plan?')) return;
+    if (!window.confirm('Delete this plan? Collaborators will be notified.')) return;
     try {
       await api.del(`/employee-plans/${id}`);
       navigate('/dashboard/employee-plans');
@@ -550,10 +663,12 @@ export function EmployeePlanDetailPage() {
         subtitle={`${String(plan.start_date || '').slice(0, 10)} → ${String(plan.end_date || '').slice(0, 10)}`}
         showBack
         backTo="/dashboard/employee-plans"
-        actions={isOwner ? [
-          { label: editing ? 'Close edit' : 'Edit', onClick: () => setEditing((v) => !v) },
-          { label: 'Delete', onClick: remove, variant: 'danger' },
-        ] : []}
+        actions={[
+          ...(canManage ? [
+            { label: editing ? 'Close edit' : 'Edit', onClick: () => setEditing((v) => !v) },
+            { label: 'Delete', onClick: remove, variant: 'danger' },
+          ] : []),
+        ]}
       />
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -561,6 +676,7 @@ export function EmployeePlanDetailPage() {
       {editing ? (
         <PlanForm
           initial={plan}
+          currentUserId={user?.id}
           onCancel={() => setEditing(false)}
           onSaved={async () => {
             setEditing(false);
@@ -573,12 +689,12 @@ export function EmployeePlanDetailPage() {
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge value={plan.status} />
-                {plan.is_joint ? <span className="text-xs rounded-full bg-cyan-50 text-cyan-700 px-2 py-0.5">Joint</span> : null}
+                {plan.is_joint ? <span className="text-xs rounded-full bg-cyan-50 text-cyan-700 px-2 py-0.5">Joint activity</span> : null}
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{plan.description || 'No description'}</p>
+              <RichHtml html={plan.description} empty="No description" />
               <dl className="grid gap-2 sm:grid-cols-2 text-sm">
                 <div><dt className="text-gray-500">Owner</dt><dd className="font-medium">{plan.owner?.names || '—'}</dd></div>
-                <div><dt className="text-gray-500">Period</dt><dd className="font-medium">{String(plan.start_date || '').slice(0, 10)} → {String(plan.end_date || '').slice(0, 10)}</dd></div>
+                <div><dt className="text-gray-500">Timeline</dt><dd className="font-medium">{String(plan.start_date || '').slice(0, 10)} → {String(plan.end_date || '').slice(0, 10)}</dd></div>
               </dl>
             </div>
 
@@ -602,7 +718,7 @@ export function EmployeePlanDetailPage() {
             </div>
 
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
+              <h3 className="text-sm font-semibold text-gray-800">Activity comments</h3>
               <ul className="space-y-3">
                 {(plan.comments || []).map((c) => (
                   <li key={c.id} className="rounded-lg bg-gray-50 p-3 text-sm">
@@ -610,21 +726,42 @@ export function EmployeePlanDetailPage() {
                       <span className="font-medium text-gray-800">{c.author?.names || 'User'}</span>
                       <span>{String(c.created_at || '').slice(0, 16).replace('T', ' ')}</span>
                     </div>
-                    <p className="whitespace-pre-wrap text-gray-700">{c.comment}</p>
+                    <RichHtml html={c.comment} />
                   </li>
                 ))}
               </ul>
               <form onSubmit={addComment} className="space-y-2">
-                <textarea
-                  className={`${inputClass} min-h-20`}
+                <RichTextEditor
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Add a comment…"
+                  onChange={setComment}
+                  placeholder="Add a comment on this activity…"
                 />
-                <button type="submit" disabled={saving || !comment.trim()} className="rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
                   Post comment
                 </button>
               </form>
+            </div>
+
+            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+              <h3 className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-gray-800">
+                <Activity className="h-4 w-4" /> Activity log
+              </h3>
+              {(plan.logs || []).length === 0 ? (
+                <p className="text-sm text-gray-400">No activity recorded yet</p>
+              ) : (
+                <ul className="space-y-2 text-sm max-h-80 overflow-y-auto">
+                  {(plan.logs || []).map((log) => (
+                    <li key={log.id} className="flex flex-wrap justify-between gap-2 border-b border-gray-50 pb-2">
+                      <span>
+                        <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
+                        {log.detail ? ` — ${log.detail}` : ''}
+                        <span className="text-gray-400"> · {log.actor?.names || 'System'}</span>
+                      </span>
+                      <span className="text-xs text-gray-400">{String(log.created_at || '').slice(0, 16).replace('T', ' ')}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
@@ -649,9 +786,9 @@ export function EmployeePlanDetailPage() {
               </div>
             )}
 
-            {(isOwner || canMonitorPlans(user)) && (
+            {canManage && (
               <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 space-y-2">
-                <p className="text-sm font-semibold text-gray-800">Update status</p>
+                <p className="text-sm font-semibold text-gray-800">Update status / mark task</p>
                 <div className="flex flex-col gap-2">
                   {PLAN_STATUSES.map((s) => (
                     <button
@@ -677,7 +814,9 @@ export function EmployeePlanDetailPage() {
 }
 
 export function StaffMonitoringPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { departments } = useUsersAndDepartments();
   const allowed = canMonitorPlans(user) || hasPrivilege(user, 'menu.staff_monitoring');
   const [periodStart, setPeriodStart] = useState(() => {
     const d = new Date();
@@ -687,9 +826,13 @@ export function StaffMonitoringPage() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('completed');
+  const [departmentId, setDepartmentId] = useState('');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -697,6 +840,9 @@ export function StaffMonitoringPage() {
       const res = await api.get('/employee-plans/monitoring', {
         period_start: periodStart,
         period_end: periodEnd,
+        search: search || undefined,
+        sort,
+        department_id: departmentId || undefined,
       });
       setData(res.data);
       setError('');
@@ -711,7 +857,7 @@ export function StaffMonitoringPage() {
   useEffect(() => {
     if (!allowed) return;
     load().catch(() => {});
-  }, [allowed]);
+  }, [allowed, sort, departmentId]);
 
   if (!allowed) {
     return <PageHeading icon={<BarChart3 className="h-6 w-6" />} title="Staff Monitoring" subtitle="Access denied" showBack backTo="/dashboard" />;
@@ -720,13 +866,33 @@ export function StaffMonitoringPage() {
   const statusCounts = data?.status_counts || {};
   const maxStatus = Math.max(1, ...Object.values(statusCounts).map(Number));
   const ranking = data?.ranking || [];
+  const collab = data?.collaboration || {};
+  const login = data?.login || {};
+  const deptStats = data?.department_stats || [];
+  const maxDept = Math.max(1, ...deptStats.map((d) => Number(d.plans || 0)));
+
+  const deletePlan = async (planId) => {
+    if (!window.confirm(`Delete plan #${planId}?`)) return;
+    try {
+      await api.del(`/employee-plans/${planId}`);
+      await load();
+      if (selectedUser) {
+        setSelectedUser((prev) => prev ? {
+          ...prev,
+          plans_preview: (prev.plans_preview || []).filter((p) => Number(p.id) !== Number(planId)),
+        } : null);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed');
+    }
+  };
 
   return (
     <div className="space-y-4">
       <PageHeading
         icon={<BarChart3 className="h-6 w-6" />}
         title="Staff Monitoring"
-        subtitle="Plans completion, login activity, and report sharing"
+        subtitle="Performance, collaboration rates, login activity, missing plans & report sharing"
         showBack
         backTo="/dashboard/employee-plans"
         actions={[
@@ -738,6 +904,8 @@ export function StaffMonitoringPage() {
               { key: 'role', label: 'Role' },
               { key: 'completed_plans', label: 'Completed' },
               { key: 'plan_count', label: 'Plans' },
+              { key: 'completion_rate', label: 'Completion %' },
+              { key: 'collaboration_rate', label: 'Collaboration %' },
               { key: 'last_login_at', label: 'Last login' },
             ], ranking),
           },
@@ -756,24 +924,50 @@ export function StaffMonitoringPage() {
           Period end
           <input type="date" className={`mt-1 ${inputClass}`} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
         </label>
+        <label className="text-sm text-gray-600">
+          Department
+          <select className={`mt-1 ${inputClass}`} value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+            <option value="">All departments</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </label>
+        <label className="text-sm text-gray-600">
+          Sort by
+          <select className={`mt-1 ${inputClass}`} value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="completed">Completed plans</option>
+            <option value="completion_rate">Completion %</option>
+            <option value="collaboration_rate">Collaboration %</option>
+            <option value="plans">Plan count</option>
+            <option value="last_login">Last login</option>
+            <option value="name">Name</option>
+          </select>
+        </label>
+        <label className="text-sm text-gray-600 grow min-w-[180px]">
+          Search staff
+          <input className={`mt-1 ${inputClass}`} placeholder="Name, email, role, dept…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </label>
         <button type="submit" className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white">Apply</button>
       </form>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
-      {loading && <p className="text-sm text-gray-500">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500">Loading monitoring dashboard…</p>}
 
       {data && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
             <StatCard label="Staff" value={data.totals?.staff} />
             <StatCard label="With plans" value={data.totals?.with_plans} />
-            <StatCard label="Without plans" value={data.totals?.without_plans} />
-            <StatCard label="Plans in period" value={data.totals?.plans} />
+            <StatCard label="Missing plans" value={data.totals?.without_plans} tone="warn" />
+            <StatCard label="Plans" value={data.totals?.plans} />
+            <StatCard label="Completed" value={data.totals?.completed} />
+            <StatCard label="Joint rate" value={`${data.totals?.joint_rate_percent ?? 0}%`} />
+            <StatCard label="Reports (month)" value={data.totals?.reports_this_month} />
+            <StatCard label="Shared reports" value={data.totals?.shared_reports_this_month} />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-3">
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Status counts</h3>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Plan status mix</h3>
               <div className="space-y-2">
                 {Object.entries(statusCounts).map(([key, value]) => (
                   <div key={key}>
@@ -781,7 +975,7 @@ export function StaffMonitoringPage() {
                       <span className="capitalize">{key}</span>
                       <span>{value}</span>
                     </div>
-                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
                       <div className="h-full rounded-full bg-[#2f5d31]" style={{ width: `${(Number(value) / maxStatus) * 100}%` }} />
                     </div>
                   </div>
@@ -789,38 +983,109 @@ export function StaffMonitoringPage() {
               </div>
             </div>
 
-            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Completion ranking</h3>
-              <div className="max-h-72 overflow-y-auto">
+            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-800">Collaboration</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <InfoTile label="Joint plans" value={collab.joint_plans} />
+                <InfoTile label="Solo plans" value={collab.solo_plans} />
+                <InfoTile label="Accepted" value={collab.accepted_invites} />
+                <InfoTile label="Pending invites" value={collab.pending_invites} />
+              </div>
+              <p className="text-3xl font-bold text-[#2f5d31]">{collab.joint_rate_percent ?? 0}%</p>
+              <p className="text-xs text-gray-500">of plans in period are joint / collaborated</p>
+            </div>
+
+            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-800">Portal access</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <InfoTile label="Active 7 days" value={login.active_7d} />
+                <InfoTile label="Active 30 days" value={login.active_30d} />
+                <InfoTile label="Older login" value={login.older} />
+                <InfoTile label="Never logged in" value={login.never_logged_in} tone="warn" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-3">
+            <div className="xl:col-span-2 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff ranking & plans</h3>
+              <div className="max-h-[28rem] overflow-auto">
                 <table className="min-w-full text-sm">
                   <thead className="text-left text-[11px] uppercase tracking-wide text-gray-400 sticky top-0 bg-white">
                     <tr>
-                      <th className="py-2">#</th>
-                      <th>Name</th>
-                      <th>Done</th>
-                      <th>Last login</th>
+                      <th className="py-2 pr-2">#</th>
+                      <th className="pr-2">Name</th>
+                      <th className="pr-2">Dept</th>
+                      <th className="pr-2">Plans</th>
+                      <th className="pr-2">Done</th>
+                      <th className="pr-2">Done %</th>
+                      <th className="pr-2">Collab %</th>
+                      <th className="pr-2">Login</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {ranking.slice(0, 40).map((row) => (
-                      <tr key={row.id}>
-                        <td className="py-2">{row.rank}</td>
-                        <td>{row.names}</td>
-                        <td>{row.completed_plans}/{row.plan_count}</td>
-                        <td className="text-xs text-gray-500">{row.last_login_at ? String(row.last_login_at).slice(0, 16).replace('T', ' ') : '—'}</td>
+                    {ranking.map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50">
+                        <td className="py-2 pr-2">{row.rank}</td>
+                        <td className="pr-2 font-medium">{row.names}</td>
+                        <td className="pr-2 text-xs text-gray-500">{row.department?.name || '—'}</td>
+                        <td className="pr-2">{row.plan_count}</td>
+                        <td className="pr-2">{row.completed_plans}</td>
+                        <td className="pr-2">{row.completion_rate}%</td>
+                        <td className="pr-2">{row.collaboration_rate}%</td>
+                        <td className="pr-2 text-xs text-gray-500">{row.last_login_at ? String(row.last_login_at).slice(0, 10) : '—'}</td>
+                        <td>
+                          <button type="button" className="text-[#2f5d31] font-medium text-xs" onClick={() => setSelectedUser(row)}>
+                            View plans
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            <div className="space-y-4">
+              <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Plans by department</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {deptStats.map((d) => (
+                    <div key={d.department}>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>{d.department}</span>
+                        <span>{d.plans} plans · {d.completed} done</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-cyan-600" style={{ width: `${(Number(d.plans) / maxDept) * 100}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Recent activity</h3>
+                <ul className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                  {(data.recent_activity || []).length === 0 && <li className="text-gray-400">No recent logs</li>}
+                  {(data.recent_activity || []).map((log) => (
+                    <li key={log.id} className="border-b border-gray-50 pb-2">
+                      <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
+                      {log.plan?.title ? ` · ${log.plan.title}` : ''}
+                      <div className="text-gray-400">{log.actor?.names || 'System'} · {String(log.created_at || '').slice(0, 16).replace('T', ' ')}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff without plans</h3>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff missing plans</h3>
               <DataTable
-                empty="Everyone has plans"
+                empty="Everyone has plans in this period"
                 columns={[
                   { key: 'names', label: 'Name' },
                   { key: 'role', label: 'Role' },
@@ -846,15 +1111,78 @@ export function StaffMonitoringPage() {
           </div>
         </>
       )}
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedUser(null)}>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-gray-900">{selectedUser.names}</h3>
+                <p className="text-sm text-gray-500">{selectedUser.role} · {selectedUser.department?.name || 'No dept'}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedUser(null)} className="rounded-lg p-1 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-sm">
+              <InfoTile label="Plans" value={selectedUser.plan_count} />
+              <InfoTile label="Done %" value={`${selectedUser.completion_rate}%`} />
+              <InfoTile label="Collab %" value={`${selectedUser.collaboration_rate}%`} />
+            </div>
+            <ul className="space-y-2 max-h-72 overflow-y-auto">
+              {(selectedUser.plans_preview || []).length === 0 && <li className="text-sm text-gray-400">No plans in this period</li>}
+              {(selectedUser.plans_preview || []).map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                  <div>
+                    <p className="font-medium text-gray-800">{p.title}</p>
+                    <p className="text-xs text-gray-500">{String(p.start_date || '').slice(0, 10)} → {String(p.end_date || '').slice(0, 10)} · {p.status}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button type="button" className="rounded-lg bg-white px-2 py-1 text-xs ring-1 ring-gray-200" onClick={() => navigate(`/dashboard/employee-plans/${p.id}`)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" className="rounded-lg bg-white px-2 py-1 text-xs text-rose-600 ring-1 ring-gray-200" onClick={() => deletePlan(p.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="w-full rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white"
+              onClick={() => navigate(`/dashboard/employee-plans?tab=all&search=${encodeURIComponent(selectedUser.names)}`)}
+            >
+              Open in plans list
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, tone }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-[#2f5d31]">{value ?? 0}</p>
+    <div className={`rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 ${tone === 'warn' ? 'ring-amber-200' : ''}`}>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className={`mt-1 text-2xl font-bold ${tone === 'warn' ? 'text-amber-600' : 'text-[#2f5d31]'}`}>{value ?? 0}</p>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-xl font-semibold text-[#2f5d31]">{value ?? 0}</p>
+    </div>
+  );
+}
+
+function InfoTile({ label, value, tone }) {
+  return (
+    <div className={`rounded-lg bg-gray-50 px-3 py-2 ${tone === 'warn' ? 'bg-amber-50' : ''}`}>
+      <p className="text-[11px] uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="font-semibold text-gray-800">{value ?? 0}</p>
     </div>
   );
 }

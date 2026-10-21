@@ -4,6 +4,7 @@ import {
   ClipboardList, Edit2, PackagePlus, RefreshCw, Search, Trash2, TrendingDown, Warehouse, X,
 } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
+import RichTextEditor from '../../components/RichTextEditor';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { DataTable, inputClass, labelClass, StatusBadge } from '../../components/ui/dataUi';
@@ -418,7 +419,9 @@ export default function InventoryPage() {
             </div>
             <form onSubmit={submitItem} className="space-y-4 p-5">
               <QuickFormField label="Item Name"><input className={inputClass} value={itemForm.name} onChange={(e) => setItemForm((p) => ({ ...p, name: e.target.value }))} required /></QuickFormField>
-              <QuickFormField label="Description"><textarea className={`${inputClass} min-h-20`} value={itemForm.description} onChange={(e) => setItemForm((p) => ({ ...p, description: e.target.value }))} /></QuickFormField>
+              <QuickFormField label="Description">
+                <RichTextEditor value={itemForm.description} onChange={(html) => setItemForm((p) => ({ ...p, description: html }))} placeholder="Item description…" />
+              </QuickFormField>
               <div className="grid gap-4 sm:grid-cols-3">
                 <QuickFormField label="Category"><input className={inputClass} value={itemForm.category} onChange={(e) => setItemForm((p) => ({ ...p, category: e.target.value }))} /></QuickFormField>
                 <QuickFormField label="Unit">
@@ -447,7 +450,9 @@ export default function InventoryPage() {
             </div>
             <form onSubmit={updateItem} className="space-y-4 p-5">
               <QuickFormField label="Item Name"><input className={inputClass} value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} required /></QuickFormField>
-              <QuickFormField label="Description"><textarea className={`${inputClass} min-h-20`} value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} /></QuickFormField>
+              <QuickFormField label="Description">
+                <RichTextEditor value={editForm.description} onChange={(html) => setEditForm((p) => ({ ...p, description: html }))} placeholder="Item description…" />
+              </QuickFormField>
               <div className="grid gap-4 sm:grid-cols-3">
                 <QuickFormField label="Category"><input className={inputClass} value={editForm.category} onChange={(e) => setEditForm((p) => ({ ...p, category: e.target.value }))} /></QuickFormField>
                 <QuickFormField label="Unit">

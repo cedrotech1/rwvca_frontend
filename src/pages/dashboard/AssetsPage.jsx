@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Check, Eye, Package, Pencil, RotateCcw, Search, Settings, Trash2, X } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import RichTextEditor from '../../components/RichTextEditor';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { inputClass, labelClass, DataTable, StatusBadge } from '../../components/ui/dataUi';
@@ -562,12 +563,10 @@ export default function AssetsPage() {
             </div>
             <div>
               <label className={labelClass}>Description</label>
-              <textarea
-                className={inputClass}
-                rows={6}
+              <RichTextEditor
                 value={createForm.description}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Enter asset description..."
+                onChange={(html) => setCreateForm((prev) => ({ ...prev, description: html }))}
+                placeholder="Enter asset description…"
               />
             </div>
             <div>
@@ -764,12 +763,10 @@ export default function AssetsPage() {
             </div>
             <div>
               <label className={labelClass}>Description</label>
-              <textarea
-                className={inputClass}
-                rows={6}
+              <RichTextEditor
                 value={editForm.description}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Enter asset description..."
+                onChange={(html) => setEditForm((prev) => ({ ...prev, description: html }))}
+                placeholder="Enter asset description…"
               />
             </div>
             <div>

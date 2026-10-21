@@ -342,7 +342,7 @@ export function canManageSupply(user) {
 }
 
 export function canAuthorizeSupply(user) {
-  return hasPrivilege(user, 'supply.authorize');
+  return String(user?.role || '').toLowerCase() === 'ed';
 }
 
 export function canMonitorPlans(user) {

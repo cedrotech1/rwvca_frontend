@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ClipboardList } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichHtml from '../../../components/RichHtml';
 import { StatusBadge, inputClass } from '../../../components/ui/dataUi';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
@@ -94,6 +95,7 @@ export function SupplyRequisitionDetailPage() {
   const status = String(row.status || '');
   const isOwner = Number(row.prepared_by) === Number(user?.id);
   const canSubmit = isOwner && ['draft', 'reverted'].includes(status);
+  const canEdit = isOwner && ['draft', 'reverted'].includes(status);
   const canAssign = manage && ['pending', 'assigned'].includes(status);
   const canApprove = manage && status === 'assigned';
   const canReject = manage && ['pending', 'assigned'].includes(status);
@@ -136,7 +138,7 @@ export function SupplyRequisitionDetailPage() {
             {row.notes && (
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-400">Notes</p>
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">{row.notes}</p>
+                <RichHtml html={row.notes} />
               </div>
             )}
             {row.reject_reason && (
@@ -192,21 +194,26 @@ export function SupplyRequisitionDetailPage() {
         </div>
 
         <div className="space-y-4">
-          {canSubmit && (
+          {(canSubmit || canEdit) && (
             <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 space-y-2">
-              <p className="text-sm font-semibold text-gray-800">Submit</p>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => act('submit')}
-                className="w-full rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                Send to logistic
-              </button>
-              {status === 'reverted' && (
-                <Link to={`/dashboard/create/requisitions?type=${row.supply_type || 'kitchen'}`} className="block text-center text-sm text-[#2f5d31]">
-                  Create a new request instead
+              <p className="text-sm font-semibold text-gray-800">Owner actions</p>
+              {canEdit && (
+                <Link
+                  to={`/dashboard/create/requisitions?type=${row.supply_type || 'kitchen'}&supplyId=${row.id}`}
+                  className="block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-sm font-medium text-gray-800"
+                >
+                  Edit draft / revise
                 </Link>
+              )}
+              {canSubmit && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => act('submit')}
+                  className="w-full rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  Send to logistic
+                </button>
               )}
             </div>
           )}

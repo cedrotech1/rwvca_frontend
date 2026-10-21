@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUp } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichTextEditor from '../../../components/RichTextEditor';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
 import api from '../../../services/api';
 
@@ -64,9 +65,14 @@ export default function CreateDocumentPage() {
             <input required className={`mt-1 ${inputClass}`} placeholder="Enter custom document type" value={form.custom_type} onChange={(e) => setForm({ ...form, custom_type: e.target.value })} />
           </label>
         )}
-        <label className={labelClass}>Description
-          <textarea className={`mt-1 min-h-24 ${inputClass}`} placeholder="Optional description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </label>
+        <div>
+          <label className={labelClass}>Description</label>
+          <RichTextEditor
+            value={form.description}
+            onChange={(html) => setForm({ ...form, description: html })}
+            placeholder="Optional description…"
+          />
+        </div>
         <label className={labelClass}>Upload Document *
           <input type="file" required accept=".pdf,.doc,.docx,.xls,.xlsx" className={`mt-1 ${inputClass}`} onChange={(e) => setFile(e.target.files?.[0] || null)} />
           <p className="text-xs text-gray-500 mt-1">Supported formats: PDF, DOCX, XLSX, DOC, XLS (Max 10MB)</p>

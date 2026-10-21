@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ClipboardList, Plus, Trash2 } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichTextEditor from '../../../components/RichTextEditor';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -73,8 +74,9 @@ export default function CreateRequisitionPage() {
   const { askNotifyPriority, modal: notifyModal } = useNotifyPriorityModal();
 
   const typeFromQuery = String(searchParams.get('type') || '').toLowerCase();
+  const supplyEditId = String(searchParams.get('supplyId') || '').trim();
   const initialType = SUPPLY_TYPES.includes(typeFromQuery) ? typeFromQuery : (typeFromQuery === PURCHASE ? PURCHASE : '');
-  const [reqType, setReqType] = useState(isEdit ? PURCHASE : initialType);
+  const [reqType, setReqType] = useState(isEdit ? PURCHASE : (supplyEditId ? (SUPPLY_TYPES.includes(initialType) ? initialType : 'kitchen') : initialType));
   const isSupply = SUPPLY_TYPES.includes(reqType);
 
   const [form, setForm] = useState({
@@ -89,7 +91,7 @@ export default function CreateRequisitionPage() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(isEdit);
+  const [loading, setLoading] = useState(isEdit || Boolean(supplyEditId));
 
   const grandTotal = useMemo(
     () => items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0),
@@ -103,10 +105,36 @@ export default function CreateRequisitionPage() {
   }, [amountInWords, isSupply, isEdit]);
 
   useEffect(() => {
-    if (isEdit) return;
+    if (isEdit || supplyEditId) return;
     if (!reqType) return;
     setSearchParams(reqType === PURCHASE ? { type: PURCHASE } : { type: reqType }, { replace: true });
-  }, [reqType, isEdit, setSearchParams]);
+  }, [reqType, isEdit, supplyEditId, setSearchParams]);
+
+  useEffect(() => {
+    if (!supplyEditId || isEdit) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    api.get(`/supply-requisitions/${supplyEditId}`)
+      .then((res) => {
+        if (cancelled) return;
+        const row = res.data;
+        setReqType(String(row.supply_type || 'kitchen').toLowerCase());
+        setNotes(row.notes || '');
+        const loaded = (row.items || []).map((item) => ({
+          item_name: item.item_name || '',
+          quantity: item.quantity ?? 1,
+          description: item.description || '',
+        }));
+        setItems(loaded.length ? loaded : [emptySupplyItem()]);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.response?.data?.message || 'Could not load supply requisition');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [supplyEditId, isEdit]);
 
   useEffect(() => {
     if (!isEdit) return undefined;
@@ -230,13 +258,25 @@ export default function CreateRequisitionPage() {
     }
     setSaving(true);
     try {
-      await api.post('/supply-requisitions', {
-        supply_type: reqType,
-        notes: notes.trim() || null,
-        items: cleaned,
-        submit: submitFlag,
-      });
-      navigate(`/dashboard/requisitions?type=${reqType}`);
+      if (supplyEditId) {
+        await api.put(`/supply-requisitions/${supplyEditId}`, {
+          supply_type: reqType,
+          notes: notes || null,
+          items: cleaned,
+        });
+        if (submitFlag) {
+          await api.post(`/supply-requisitions/${supplyEditId}/submit`);
+        }
+        navigate(`/dashboard/requisitions/supply/${supplyEditId}`);
+      } else {
+        await api.post('/supply-requisitions', {
+          supply_type: reqType,
+          notes: notes || null,
+          items: cleaned,
+          submit: submitFlag,
+        });
+        navigate(`/dashboard/requisitions?type=${reqType}`);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save requisition');
     } finally {
@@ -276,7 +316,7 @@ export default function CreateRequisitionPage() {
       />
       {notifyModal}
 
-      {!isEdit && (
+      {!isEdit && !supplyEditId && (
         <TypeChooser value={reqType} onChange={selectType} allowSupply={allowSupply} />
       )}
 
@@ -287,11 +327,10 @@ export default function CreateRequisitionPage() {
           </p>
           <div>
             <label className={labelClass}>Notes</label>
-            <textarea
-              className={`${inputClass} min-h-20 mt-1`}
+            <RichTextEditor
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional overall note"
+              onChange={setNotes}
+              placeholder="Optional overall note (formatting supported)…"
             />
           </div>
           <div>
