@@ -32,7 +32,7 @@ const GENERAL_ITEMS = [
   { id: 'communications', label: 'Communications', path: '/dashboard/communications', privilege: 'menu.communications' },
   { id: 'assets', label: 'Assets', path: '/dashboard/assets', privilege: 'menu.assets' },
   { id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans', privilege: 'menu.employee_plans' },
-  { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring' },
+  { id: 'staff-monitoring', label: 'My plans monitoring', path: '/dashboard/staff-monitoring' },
   { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', privilege: 'menu.notifications' },
   { id: 'account', label: 'Account', path: '/dashboard/profile', privilege: 'menu.account' },
   { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance', privilege: 'menu.attendance' },
@@ -132,7 +132,7 @@ export function getMenuForRole(role, user = null) {
   if (!privs) {
     return [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-      { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring' },
+      { id: 'staff-monitoring', label: 'My plans monitoring', path: '/dashboard/staff-monitoring' },
       { id: 'account', label: 'Account', path: '/dashboard/profile' },
     ];
   }
@@ -174,7 +174,17 @@ export function getMenuForRole(role, user = null) {
   const viewChildren = filterByPrivilege(VIEW_ITEMS, privs).map(stripPrivilegeMeta);
   if (viewChildren.length) menu.push({ id: 'view', label: 'View', children: viewChildren });
 
-  const generalChildren = filterByPrivilege(GENERAL_ITEMS, privs).map(stripPrivilegeMeta);
+  const seeAllPlanMonitoring = privs.has('plans.monitor') || privs.has('menu.staff_monitoring');
+  const generalChildren = filterByPrivilege(GENERAL_ITEMS, privs).map((item) => {
+    const cleaned = stripPrivilegeMeta(item);
+    if (cleaned.id === 'staff-monitoring') {
+      return {
+        ...cleaned,
+        label: seeAllPlanMonitoring ? 'Employee plan monitoring' : 'My plans monitoring',
+      };
+    }
+    return cleaned;
+  });
   if (generalChildren.length) menu.push({ id: 'general', label: 'General', children: generalChildren });
 
   if (privs.has('menu.inventory') && !menu.some((m) => m.id === 'inventory')) {
@@ -353,7 +363,7 @@ export function canAuthorizeSupply(user) {
   return String(user?.role || '').toLowerCase() === 'ed';
 }
 
-/** Privilege to see all-staff monitoring (everyone still has their own dashboard). */
+/** Privilege to see organization-wide employee plan monitoring (everyone still has My plans monitoring). */
 export function canMonitorPlans(user) {
   return hasPrivilege(user, 'plans.monitor') || hasPrivilege(user, 'menu.staff_monitoring');
 }

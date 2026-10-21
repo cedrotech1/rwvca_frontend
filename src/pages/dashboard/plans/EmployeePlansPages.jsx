@@ -556,7 +556,7 @@ export function EmployeePlansPage() {
         <button type="button" onClick={() => setSection('plans')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'plans' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Plans</button>
         <button type="button" onClick={() => setSection('reports')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'reports' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Reports</button>
         <Link to="/dashboard/staff-monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-[#2f5d31]/10 text-[#2f5d31] ring-1 ring-[#2f5d31]/30">
-          <BarChart3 className="h-4 w-4" /> Staff monitoring
+          <BarChart3 className="h-4 w-4" /> {monitor ? 'Employee plan monitoring' : 'My plans monitoring'}
         </Link>
       </div>
 
@@ -922,7 +922,7 @@ export function StaffMonitoringPage() {
       setData(res.data);
       setError('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not load monitoring data');
+      setError(err.response?.data?.message || 'Could not load plan monitoring');
       setData(null);
     } finally {
       setLoading(false);
@@ -962,10 +962,10 @@ export function StaffMonitoringPage() {
     <div className="space-y-4">
       <PageHeading
         icon={<BarChart3 className="h-6 w-6" />}
-        title={canSeeAll ? 'Staff Monitoring' : 'My Monitoring'}
+        title={canSeeAll ? 'Employee plan monitoring' : 'My plans monitoring'}
         subtitle={
           canSeeAll
-            ? 'Organization-wide performance, collaboration, login activity, missing plans & report sharing'
+            ? 'Organization-wide plan performance, collaboration, login activity, missing plans & report sharing'
             : 'Your personal plan performance, collaboration, login activity and reports for this period'
         }
         showBack
@@ -989,7 +989,7 @@ export function StaffMonitoringPage() {
 
       {!canSeeAll && (
         <p className="rounded-lg bg-[#2f5d31]/5 px-3 py-2 text-xs text-[#2f5d31] ring-1 ring-[#2f5d31]/20">
-          Showing your own monitoring dashboard. Staff with the monitoring privilege can see all staff.
+          Showing My plans monitoring. Users with the Employee plan monitoring privilege can see all staff.
         </p>
       )}
 
@@ -1035,7 +1035,7 @@ export function StaffMonitoringPage() {
       </form>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
-      {loading && <p className="text-sm text-gray-500">Loading monitoring dashboard…</p>}
+      {loading && <p className="text-sm text-gray-500">Loading plan monitoring…</p>}
 
       {data && (
         <>
