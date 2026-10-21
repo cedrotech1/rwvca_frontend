@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageBanner from '../../components/public/PageBanner';
 import SectionTitle from '../../components/public/SectionTitle';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 import { fileUrl } from '../../services/api/config';
+import { toPlainText } from '../../utils/sanitize';
 
 function ProductCard({ product, onOpen }) {
   const images = [product.image1_url, product.image2_url, product.image3_url].filter(Boolean);
@@ -15,7 +17,7 @@ function ProductCard({ product, onOpen }) {
     return () => clearInterval(timer);
   }, [images.length]);
 
-  const description = product.description || '';
+  const description = toPlainText(product.description || '');
   const short = description.length > 100;
 
   return (
@@ -114,7 +116,9 @@ export default function MembersProductsPage() {
               <div className="flex-1 p-10">
                 <h2 className="text-[#8B4513] text-[28px] mb-2">{selected.product.product_name}</h2>
                 <p><strong className="text-[#8B4513]">Company:</strong> {selected.product.company_name}</p>
-                <p className="my-4 text-justify">{selected.product.description}</p>
+                <div className="my-4 text-justify">
+                  <RichHtml html={selected.product.description} className="prose max-w-none" empty="" />
+                </div>
                 <hr className="my-6" />
                 <p><strong className="text-[#8B4513]"><i className="fas fa-phone" /> Phone:</strong> {selected.product.phone || 'N/A'}</p>
                 <p><strong className="text-[#8B4513]"><i className="fas fa-envelope" /> Email:</strong> {selected.product.email || 'N/A'}</p>

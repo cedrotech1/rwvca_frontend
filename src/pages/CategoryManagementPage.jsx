@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useCategories } from '../contexts/CategoriesContext';
 import { useCampuses } from '../contexts/CampusesContext';
+import RichHtml from '../components/RichHtml';
+import RichTextEditor from '../components/RichTextEditor';
 
 export const CategoryManagementPage = () => {
   const { user } = useAuth();
@@ -267,7 +269,7 @@ export const CategoryManagementPage = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {category.description || 'No description'}
+                        <RichHtml html={category.description} empty="No description" className="prose prose-sm max-w-none text-gray-600" />
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -344,11 +346,10 @@ export const CategoryManagementPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={3}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(html) => setFormData({ ...formData, description: html })}
+                    placeholder="Category description…"
                   />
                 </div>
                 <div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PageBanner from '../../components/public/PageBanner';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 import { fileUrl } from '../../services/api/config';
 
@@ -78,7 +79,9 @@ export default function ProgramsPage() {
             {selected ? (
               <>
                 <h1 className="text-3xl font-semibold mb-4">{selected.title}</h1>
-                <p className="whitespace-pre-wrap text-gray-700 leading-relaxed mb-6">{selected.description}</p>
+                <div className="mb-6">
+                  <RichHtml html={selected.description} className="prose max-w-none text-gray-700 leading-relaxed" empty="" />
+                </div>
                 {selected.images?.[0] ? (
                   <img src={fileUrl(selected.images[0].url)} alt="" className="w-full rounded-lg mb-6" />
                 ) : null}

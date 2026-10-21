@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Download, MessageSquare, Paperclip, Send, UserPlus, XCircle } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichHtml from '../../../components/RichHtml';
 import { ConfirmationModal } from '../../../components/ConfirmationModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotifications } from '../../../contexts/NotificationsContext';
@@ -195,7 +196,7 @@ export default function TicketDetailPage() {
 
             <div className="mt-5">
               <p className="mb-2 text-sm text-gray-500">Description</p>
-              <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: item.description || '<p>—</p>' }} />
+              <RichHtml html={item.description} />
             </div>
 
             {item.attachment_files?.length > 0 && (
@@ -266,7 +267,9 @@ export default function TicketDetailPage() {
                       {Number(replyRow.is_status_update) === 1 && <span className="rounded-full bg-amber-100 px-2 py-1 font-medium text-amber-700">Status Update</span>}
                     </div>
                   </div>
-                  <div className="prose prose-sm mt-3 max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: replyRow.message || '<p>—</p>' }} />
+                  <div className="mt-3">
+                    <RichHtml html={replyRow.message} />
+                  </div>
                   {replyRow.attachment_files?.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {replyRow.attachment_files.map((file, index) => (

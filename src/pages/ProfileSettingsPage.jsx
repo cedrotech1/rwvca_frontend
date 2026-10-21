@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { UserCog, Camera, Upload, CheckCircle2, AlertCircle, User, Phone, PenLine, Mail, Shield, Lock, Eye, EyeOff, Briefcase, MapPin, Calendar, Globe, IdCard, FileText } from 'lucide-react';
 import { PageHeading } from '../components/PageHeading';
+import RichHtml from '../components/RichHtml';
+import RichTextEditor from '../components/RichTextEditor';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api/authService';
 import { fileUrl } from '../services/api/config';
@@ -400,7 +402,7 @@ export const ProfileSettingsPage = () => {
                         <FileText className="h-4 w-4 text-[#2f5d31]" />
                         About
                       </h3>
-                      <p className="text-sm text-gray-700 whitespace-pre-line">{user.bio}</p>
+                      <RichHtml html={user.bio} className="prose prose-sm max-w-none text-gray-700" />
                     </div>
                   )}
 
@@ -555,7 +557,7 @@ export const ProfileSettingsPage = () => {
 
                         <div className="sm:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1.5">About / Bio</label>
-                          <textarea className="w-full rounded-lg border border-gray-200 bg-white py-2.5 px-3 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#2f5d31] focus:outline-none focus:ring-2 focus:ring-[#2f5d31]/20" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us about yourself" />
+                          <RichTextEditor value={bio} onChange={setBio} placeholder="Tell us about yourself" />
                         </div>
                       </div>
                     </div>

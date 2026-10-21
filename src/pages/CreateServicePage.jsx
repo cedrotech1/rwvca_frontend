@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useServices } from '../contexts/ServicesContext';
 import { useCategories } from '../contexts/CategoriesContext';
 import { CreateServiceHeading } from '../components/PageHeading';
+import RichTextEditor from '../components/RichTextEditor';
 
 export const CreateServicePage = () => {
   const navigate = useNavigate();
@@ -130,27 +131,22 @@ export const CreateServicePage = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-          <textarea
+          <RichTextEditor
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="block w-full px-3 py-2 bg-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Short description of this service report..."
+            onChange={(html) => setFormData({ ...formData, description: html })}
+            placeholder="Short description of this service report…"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">What to Report *</label>
-          <textarea
+          <RichTextEditor
             value={formData.whatToReport}
-            onChange={(e) => setFormData({ ...formData, whatToReport: e.target.value })}
-            rows={12}
-            className="block w-full px-3 py-2 bg-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            placeholder={'Indicator / Number of Activities:\n• Item one\n• Item two\n\nAlso Report:\n• Reporting Date\n• Challenges\n• Way forward'}
-            required
+            onChange={(html) => setFormData({ ...formData, whatToReport: html })}
+            placeholder="Indicator / Number of Activities, bullet points, also report…"
           />
           <p className="mt-1 text-xs text-gray-500">
-            Enter bullet points and headings exactly as reporters should see them.
+            Use bullets and headings exactly as reporters should see them.
           </p>
         </div>
 

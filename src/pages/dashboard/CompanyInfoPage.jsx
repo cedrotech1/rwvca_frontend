@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Building2, Save } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
+import RichTextEditor from '../../components/RichTextEditor';
 import { inputClass, labelClass } from '../../components/ui/dataUi';
 import api from '../../services/api';
 import { fileUrl } from '../../services/api/config';
@@ -9,7 +10,7 @@ const FIELDS = [
   { name: 'company_name', label: 'Company name', required: true },
   { name: 'email', label: 'Email', type: 'email', required: true },
   { name: 'phone', label: 'Phone', required: true },
-  { name: 'address', label: 'Address', type: 'textarea', required: true },
+  { name: 'address', label: 'Address', type: 'richtext', required: true },
   { name: 'website', label: 'Website' },
   { name: 'facebook', label: 'Facebook' },
   { name: 'twitter', label: 'Twitter' },
@@ -71,9 +72,11 @@ export default function CompanyInfoPage() {
           {message && <p className="text-sm text-emerald-700">{message}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             {FIELDS.map((field) => (
-              <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+              <div key={field.name} className={field.type === 'textarea' || field.type === 'richtext' ? 'md:col-span-2' : ''}>
                 <label className={labelClass}>{field.label}{field.required ? ' *' : ''}</label>
-                {field.type === 'textarea' ? (
+                {field.type === 'richtext' ? (
+                  <RichTextEditor value={form[field.name] || ''} onChange={(html) => setForm({ ...form, [field.name]: html })} placeholder={field.label} />
+                ) : field.type === 'textarea' ? (
                   <textarea required={field.required} className={inputClass} value={form[field.name] || ''} onChange={(e) => setForm({ ...form, [field.name]: e.target.value })} />
                 ) : (
                   <input required={field.required} type={field.type || 'text'} className={inputClass} value={form[field.name] || ''} onChange={(e) => setForm({ ...form, [field.name]: e.target.value })} />

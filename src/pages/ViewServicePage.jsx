@@ -4,6 +4,7 @@ import { ArrowLeft, Edit2, Trash2, Calendar, User, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useServices } from '../contexts/ServicesContext';
+import RichHtml from '../components/RichHtml';
 
 export const ViewServicePage = () => {
   const { id } = useParams();
@@ -193,16 +194,12 @@ export const ViewServicePage = () => {
 
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
-        <p className="text-gray-700 leading-relaxed">
-          {service.description || 'No description available for this service.'}
-        </p>
+        <RichHtml html={service.description} empty="No description available for this service." />
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">What to Report</h2>
-        <pre className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans m-0">
-          {service.whatToReport || 'No reporting guidance defined for this service.'}
-        </pre>
+        <RichHtml html={service.whatToReport} empty="No reporting guidance defined for this service." />
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">

@@ -15,7 +15,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { reportRequestService } from '../services/api/reportRequestService';
 import { PageHeading } from '../components/PageHeading';
+import RichHtml from '../components/RichHtml';
 import { ReportRequestCombinedView } from '../components/reportRequests/ReportRequestCombinedView';
+import { toPlainText } from '../utils/sanitize';
 
 const FORMAT_LABELS = {
   any: 'Campus chooses (text or file)',
@@ -132,7 +134,7 @@ export const ViewReportRequestPage = () => {
     <div className="p-4 sm:p-6">
       <PageHeading
         title={request.title}
-        subtitle={request.description || 'Head Office report request'}
+        subtitle={toPlainText(request.description) || 'Head Office report request'}
         icon={<FileSearch className="h-6 w-6" />}
         showBack
         backTo="/report-requests"
@@ -193,9 +195,9 @@ export const ViewReportRequestPage = () => {
       {/* What to report */}
       <section className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900">What to report</h3>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
-          {request.effectiveWhatToReport || 'No guidance provided.'}
-        </p>
+        <div className="mt-2">
+          <RichHtml html={request.effectiveWhatToReport} empty="No guidance provided." />
+        </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
           <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
             Format: {FORMAT_LABELS[request.submissionFormat] || FORMAT_LABELS.any}

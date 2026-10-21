@@ -5,6 +5,7 @@ import { fileUrl } from '../../services/api/config';
 import SectionTitle from '../../components/public/SectionTitle';
 import ContactForm from '../../components/public/ContactForm';
 import { breakName, MAP_EMBED } from '../../components/public/publicUi';
+import { toPlainText } from '../../utils/sanitize';
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
@@ -163,7 +164,7 @@ export default function HomePage() {
             <div className="public-ad-gradient w-1/2 max-md:w-full h-full flex items-center px-5 text-white">
               <div className="max-w-[90%]">
                 <h2 className="text-[26px] font-bold mb-2.5">{currentAd?.title || ad.title}</h2>
-                <p className="text-sm">{currentAd?.description || ad.description || 'RWCA Advertisement'}</p>
+                <p className="text-sm">{toPlainText(currentAd?.description || ad.description) || 'RWCA Advertisement'}</p>
               </div>
             </div>
           </div>

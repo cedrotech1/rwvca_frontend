@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { StickyNote } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichHtml from '../../../components/RichHtml';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import CreateFormPage from './CreateFormPage';
@@ -50,7 +51,7 @@ export function EdNotesCreatePage() {
       fields={[
         { name: 'module_type', label: 'Module', required: true },
         { name: 'record_id', label: 'Record', type: 'number', required: true },
-        { name: 'message', label: 'ED Note', type: 'textarea', required: true, width: 'full' },
+        { name: 'message', label: 'ED Note', type: 'richtext', required: true, width: 'full' },
         { name: 'recipient_ids', label: 'Select Recipients', type: 'multiselect', optionsKey: 'users', required: true, width: 'full' },
       ]}
       beforeSubmit={(form) => ({
@@ -101,7 +102,7 @@ export function EdNoteDetailPage() {
             <p className="text-gray-500">From</p><p className="sm:col-span-2">{item.user?.names}</p>
             <p className="text-gray-500">Date</p><p className="sm:col-span-2">{item.created_at}</p>
           </div>
-          <p className="whitespace-pre-wrap">{item.message}</p>
+          <RichHtml html={item.message} />
           <div className="border-t pt-4 space-y-3">
             <h3 className="font-semibold">Staff reply</h3>
             {(item.replies || []).map((row) => (

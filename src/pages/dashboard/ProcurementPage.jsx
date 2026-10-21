@@ -3,6 +3,8 @@ import {
   ClipboardList, FileText, Package, Plus, RefreshCw, Search, Upload, X,
 } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
+import RichHtml from '../../components/RichHtml';
+import RichTextEditor from '../../components/RichTextEditor';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { downloadProtectedFile, openProtectedFile } from '../../services/api/config';
@@ -345,11 +347,11 @@ export default function ProcurementPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Description</label>
-                <textarea className={`${inputClass} min-h-24`} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <RichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Procurement description…" />
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Notes</label>
-                <textarea className={`${inputClass} min-h-20`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                <RichTextEditor value={form.notes} onChange={(html) => setForm({ ...form, notes: html })} placeholder="Additional notes…" />
               </div>
               {!editingId ? (
                 <div className="sm:col-span-2">
@@ -388,7 +390,8 @@ export default function ProcurementPage() {
               <p><span className="text-gray-500">Category:</span> {detail.category || '—'}</p>
               <p><span className="text-gray-500">Created by:</span> {detail.creator?.names || '—'}</p>
             </div>
-            {detail.description ? <p className="mt-4 whitespace-pre-wrap text-sm text-gray-700">{detail.description}</p> : null}
+            {detail.description ? <div className="mt-4"><RichHtml html={detail.description} /></div> : null}
+            {detail.notes ? <div className="mt-3"><p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Notes</p><RichHtml html={detail.notes} /></div> : null}
 
             <div className="mt-6">
               <div className="mb-3 flex items-center justify-between">

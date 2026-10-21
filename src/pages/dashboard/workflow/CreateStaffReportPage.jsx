@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FilePen, FileText, List, Paperclip, X } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichTextEditor from '../../../components/RichTextEditor';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import api from '../../../services/api';
@@ -158,13 +159,10 @@ export default function CreateStaffReportPage() {
           <label className={labelClass}>
             Content / Description <span className="text-red-500">*</span>
           </label>
-          <textarea
-            required
-            rows={8}
-            className={`mt-1 min-h-[160px] ${inputClass}`}
+          <RichTextEditor
             value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            placeholder="Write the main content of the report here..."
+            onChange={(html) => setForm({ ...form, content: html })}
+            placeholder="Write the main content of the report here…"
           />
         </div>
 

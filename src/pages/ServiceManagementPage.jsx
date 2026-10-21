@@ -19,6 +19,8 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useServices } from '../contexts/ServicesContext';
 import { useCategories } from '../contexts/CategoriesContext';
 import { ServiceManagementHeading } from '../components/PageHeading';
+import RichHtml from '../components/RichHtml';
+import { toPlainText } from '../utils/sanitize';
 import {
   exportReportingFrameworkToExcel,
   exportReportingFrameworkToWord,
@@ -28,20 +30,17 @@ import {
 const WhatToReportCell = ({ text }) => {
   const [expanded, setExpanded] = useState(false);
   const content = String(text || '').trim();
+  const plain = toPlainText(content);
 
   if (!content) {
     return <span className="text-sm text-gray-400 italic">No reporting guidance defined</span>;
   }
 
-  const lines = content.split('\n');
-  const isLong = lines.length > 10 || content.length > 500;
-  const shown = !expanded && isLong ? `${lines.slice(0, 10).join('\n')}\n…` : content;
+  const isLong = plain.length > 500 || (plain.match(/\n/g) || []).length > 10;
 
   return (
-    <div>
-      <pre className="m-0 whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
-        {shown}
-      </pre>
+    <div className={!expanded && isLong ? 'max-h-40 overflow-hidden relative' : ''}>
+      <RichHtml html={content} className="prose prose-sm max-w-none text-gray-700" empty="No reporting guidance defined" />
       {isLong && (
         <button
           type="button"

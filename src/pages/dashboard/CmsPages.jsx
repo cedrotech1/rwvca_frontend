@@ -72,15 +72,15 @@ export const ProgramsCmsPage = () => (
     ]}
     createFields={[
       { name: 'title', label: 'Program Title', required: true },
-      { name: 'description', label: 'Description', type: 'textarea', required: true },
+      { name: 'description', label: 'Description', type: 'richtext', required: true },
       { name: 'application_deadline', label: 'Application Deadline', type: 'date', required: true },
       { name: 'category', label: 'Category', type: 'select', required: true, options: [
         { value: 'upcoming', label: 'Upcoming' },
         { value: 'recent', label: 'Recent' },
         { value: 'main', label: 'Main' },
       ] },
-      { name: 'requirements', label: 'Requirements', type: 'textarea', required: true },
-      { name: 'why_apply', label: 'Why Apply?', type: 'textarea' },
+      { name: 'requirements', label: 'Requirements', type: 'richtext', required: true },
+      { name: 'why_apply', label: 'Why Apply?', type: 'richtext' },
       { name: 'application_link', label: 'Application Form Link (Optional)' },
       { name: 'status', label: 'Status', type: 'select', required: true, options: ACTIVE_STATUS },
     ]}
@@ -132,7 +132,7 @@ export const PlatformsCmsPage = () => (
     ]}
     createFields={[
       { name: 'name', label: 'Name', required: true },
-      { name: 'description', label: 'Description', type: 'textarea', required: true },
+      { name: 'description', label: 'Description', type: 'richtext', required: true },
       { name: 'display_order', label: 'Display order', type: 'number' },
       { name: 'status', label: 'Status', type: 'select', required: true, options: PUBLISH_STATUS },
     ]}
@@ -160,7 +160,7 @@ export const TeamCmsPage = () => (
       { name: 'role', label: 'Role', required: true },
       { name: 'email', label: 'Email', type: 'email', required: true },
       { name: 'phone', label: 'Phone', required: true },
-      { name: 'bio', label: 'Bio', type: 'textarea' },
+      { name: 'bio', label: 'Bio', type: 'richtext' },
     ]}
   />
 );
@@ -190,7 +190,7 @@ export const MemberProductsCmsPage = () => (
     createFields={[
       { name: 'product_name', label: 'Product name', required: true },
       { name: 'company_name', label: 'Company name', required: true },
-      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'description', label: 'Description', type: 'richtext' },
       { name: 'phone', label: 'Phone' },
       { name: 'email', label: 'Email', type: 'email' },
       { name: 'address', label: 'Address' },
@@ -221,7 +221,7 @@ export const AboutCmsPage = () => (
         { value: 'bottom', label: 'Bottom' },
       ] },
       { name: 'title', label: 'Title', required: true },
-      { name: 'content', label: 'Content', type: 'textarea', required: true },
+      { name: 'content', label: 'Content', type: 'richtext', required: true },
       { name: 'display_order', label: 'Display order', type: 'number' },
       { name: 'is_active', label: 'Status', type: 'select', options: FLAG_STATUS },
     ]}
@@ -241,7 +241,7 @@ export const MembershipSetupCmsPage = () => (
     ]}
     createFields={[
       { name: 'category_name', label: 'Category name', required: true },
-      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'description', label: 'Description', type: 'richtext' },
       { name: 'display_order', label: 'Display order', type: 'number' },
     ]}
   />

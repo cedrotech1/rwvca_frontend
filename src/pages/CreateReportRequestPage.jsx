@@ -18,10 +18,12 @@ import { dedupeCampuses } from '../utils/campusUtils';
 import { academicYearService } from '../services/api/academicYearService';
 import { reportRequestService } from '../services/api/reportRequestService';
 import { PageHeading } from '../components/PageHeading';
+import RichTextEditor from '../components/RichTextEditor';
 import {
   ReportRequestFieldBuilder,
   createEmptyField,
 } from '../components/reportRequests/ReportRequestFieldBuilder';
+import { toPlainText } from '../utils/sanitize';
 
 const FORMAT_OPTIONS = [
   {
@@ -275,7 +277,7 @@ export const CreateReportRequestPage = () => {
                   )}
                   <div className="font-medium text-gray-900">{service.name}</div>
                   {service.description && (
-                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">{service.description}</p>
+                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">{toPlainText(service.description)}</p>
                   )}
                 </button>
               ))}
@@ -314,11 +316,9 @@ export const CreateReportRequestPage = () => {
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Description (optional)</label>
-                <textarea
-                  rows={3}
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
-                  className="w-full rounded-md border-0 bg-gray-100 px-3 py-2 focus:bg-white focus:ring-2 focus:ring-[#2f5d31]"
+                  onChange={(html) => setFormData((p) => ({ ...p, description: html }))}
                   placeholder="Additional instructions for campuses"
                 />
               </div>
@@ -375,11 +375,9 @@ export const CreateReportRequestPage = () => {
                     <label className="mb-1 block text-sm font-medium text-gray-700">
                       Custom — What to report *
                     </label>
-                    <textarea
-                      rows={4}
+                    <RichTextEditor
                       value={formData.whatToReport}
-                      onChange={(e) => setFormData((p) => ({ ...p, whatToReport: e.target.value }))}
-                      className="w-full rounded-md border-0 bg-white px-3 py-2 focus:ring-2 focus:ring-[#2f5d31]"
+                      onChange={(html) => setFormData((p) => ({ ...p, whatToReport: html }))}
                       placeholder="Override service guidance with your own instructions"
                     />
                     {errors.whatToReport && (

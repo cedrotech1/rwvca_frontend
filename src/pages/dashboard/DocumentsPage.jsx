@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FolderOpen, Plus } from 'lucide-react';
 import { PageHeading } from '../../components/PageHeading';
+import RichTextEditor from '../../components/RichTextEditor';
 import api from '../../services/api';
 import { openProtectedFile } from '../../services/api/config';
 
@@ -93,7 +94,7 @@ export default function DocumentsPage() {
             <h2 className="text-lg font-bold">Upload document</h2>
             <input className="w-full border rounded px-3 py-2" placeholder="Title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             <input className="w-full border rounded px-3 py-2" placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
-            <textarea className="w-full border rounded px-3 py-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <RichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Description…" />
             <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" required onChange={(e) => setFile(e.target.files?.[0] || null)} />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex justify-end gap-2">

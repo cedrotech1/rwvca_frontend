@@ -36,23 +36,52 @@ function useUsersAndDepartments() {
   return { users, departments };
 }
 
-function CollaboratorPicker({ users, selectedIds, onChange, excludeUserId }) {
+function userDeptId(user) {
+  return Number(user?.department_ID || user?.department?.id || 0) || 0;
+}
+
+function userDeptName(user, departments = []) {
+  if (user?.department?.name) return user.department.name;
+  const dept = departments.find((d) => Number(d.id) === userDeptId(user));
+  return dept?.name || 'No department';
+}
+
+/** Pick specific users; departments only filter / select-all helpers. */
+function UserSharePicker({
+  users,
+  departments = [],
+  selectedIds,
+  onChange,
+  excludeUserId,
+  label = 'Share with specific users (they get notified)',
+  hint = 'Department filters help you find people. Only selected users are notified — not the whole department.',
+}) {
   const [q, setQ] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
   const selected = useMemo(() => new Set(selectedIds.map(Number)), [selectedIds]);
+
+  const pool = useMemo(
+    () => users.filter((u) => Number(u.id) !== Number(excludeUserId)),
+    [users, excludeUserId]
+  );
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return users
-      .filter((u) => Number(u.id) !== Number(excludeUserId))
+    const deptId = deptFilter ? Number(deptFilter) : 0;
+    return pool
       .filter((u) => {
+        if (deptId && userDeptId(u) !== deptId) return false;
         if (!needle) return true;
+        const deptName = userDeptName(u, departments).toLowerCase();
         return (
           String(u.names || '').toLowerCase().includes(needle)
           || String(u.email || '').toLowerCase().includes(needle)
           || String(u.role || '').toLowerCase().includes(needle)
+          || deptName.includes(needle)
         );
       })
-      .slice(0, 80);
-  }, [users, q, excludeUserId]);
+      .slice(0, 120);
+  }, [pool, q, deptFilter, departments]);
 
   const toggle = (userId) => {
     const id = Number(userId);
@@ -60,19 +89,77 @@ function CollaboratorPicker({ users, selectedIds, onChange, excludeUserId }) {
     else onChange([...selectedIds, id]);
   };
 
-  const selectedUsers = users.filter((u) => selected.has(Number(u.id)));
+  const selectAllVisible = () => {
+    const ids = new Set(selectedIds.map(Number));
+    filtered.forEach((u) => ids.add(Number(u.id)));
+    onChange([...ids]);
+  };
+
+  const selectAllInDepartment = () => {
+    if (!deptFilter) return;
+    const deptId = Number(deptFilter);
+    const ids = new Set(selectedIds.map(Number));
+    pool.filter((u) => userDeptId(u) === deptId).forEach((u) => ids.add(Number(u.id)));
+    onChange([...ids]);
+  };
+
+  const clearSelected = () => onChange([]);
+
+  const selectedUsers = pool.filter((u) => selected.has(Number(u.id)));
 
   return (
     <div className="space-y-3 rounded-xl ring-1 ring-gray-200 bg-gray-50/60 p-3">
-      <p className={labelClass}>Joint activity — search & select collaborators</p>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <input
-          className={`${inputClass} pl-9 bg-white`}
-          placeholder="Search by name, email, or role…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={`${labelClass} mb-0`}>{label}</p>
+        <span className="text-xs text-gray-500">{selectedUsers.length} selected</span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            className={`${inputClass} pl-9 bg-white`}
+            placeholder="Search name, email, role, department…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <select
+          className={`${inputClass} bg-white`}
+          value={deptFilter}
+          onChange={(e) => setDeptFilter(e.target.value)}
+        >
+          <option value="">All departments</option>
+          {departments.map((d) => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={selectAllVisible}
+          className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
+        >
+          Select all shown
+        </button>
+        {deptFilter ? (
+          <button
+            type="button"
+            onClick={selectAllInDepartment}
+            className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-[#2f5d31] ring-1 ring-[#2f5d31]/30 hover:bg-[#2f5d31]/5"
+          >
+            Select all in department
+          </button>
+        ) : null}
+        {selectedUsers.length > 0 ? (
+          <button
+            type="button"
+            onClick={clearSelected}
+            className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50"
+          >
+            Clear selected
+          </button>
+        ) : null}
       </div>
       {selectedUsers.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -82,6 +169,7 @@ function CollaboratorPicker({ users, selectedIds, onChange, excludeUserId }) {
               type="button"
               onClick={() => toggle(u.id)}
               className="inline-flex items-center gap-1 rounded-full bg-[#2f5d31] px-2.5 py-1 text-xs font-medium text-white"
+              title="Remove"
             >
               {u.names}
               <X className="h-3 w-3" />
@@ -89,29 +177,46 @@ function CollaboratorPicker({ users, selectedIds, onChange, excludeUserId }) {
           ))}
         </div>
       )}
-      <div className="max-h-52 overflow-y-auto rounded-lg bg-white ring-1 ring-gray-200 divide-y divide-gray-50">
+      <div className="max-h-56 overflow-y-auto rounded-lg bg-white ring-1 ring-gray-200 divide-y divide-gray-50">
         {filtered.length === 0 ? (
           <p className="p-3 text-sm text-gray-400">No staff match your search</p>
         ) : (
           filtered.map((u) => (
             <label key={u.id} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[#2f5d31]/5">
               <input type="checkbox" checked={selected.has(Number(u.id))} onChange={() => toggle(u.id)} />
-              <span className="font-medium text-gray-800">{u.names}</span>
-              <span className="text-xs text-gray-400">{u.role}</span>
-              <span className="ml-auto text-xs text-gray-400 truncate max-w-[140px]">{u.email}</span>
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-gray-800">{u.names}</span>
+                <span className="ml-2 text-xs text-gray-400">{u.role}</span>
+                <span className="block text-xs text-gray-400 truncate">
+                  {userDeptName(u, departments)}
+                  {u.email ? ` · ${u.email}` : ''}
+                </span>
+              </span>
             </label>
           ))
         )}
       </div>
-      <p className="text-xs text-gray-500">
-        Selected collaborators get an immediate notification and can accept / decline with a reply.
-      </p>
+      {hint ? <p className="text-xs text-gray-500">{hint}</p> : null}
     </div>
   );
 }
 
+function CollaboratorPicker({ users, departments, selectedIds, onChange, excludeUserId }) {
+  return (
+    <UserSharePicker
+      users={users}
+      departments={departments}
+      selectedIds={selectedIds}
+      onChange={onChange}
+      excludeUserId={excludeUserId}
+      label="Joint activity — search & select collaborators"
+      hint="Selected collaborators get an immediate notification and can accept / decline with a reply."
+    />
+  );
+}
+
 function PlanForm({ initial, onSaved, onCancel, currentUserId }) {
-  const { users } = useUsersAndDepartments();
+  const { users, departments } = useUsersAndDepartments();
   const [form, setForm] = useState(() => ({
     title: initial?.title || '',
     description: initial?.description || '',
@@ -206,6 +311,7 @@ function PlanForm({ initial, onSaved, onCancel, currentUserId }) {
       {(form.is_joint || form.collaborator_ids.length > 0) && (
         <CollaboratorPicker
           users={users}
+          departments={departments}
           selectedIds={form.collaborator_ids}
           excludeUserId={currentUserId}
           onChange={(ids) => setForm({ ...form, collaborator_ids: ids, is_joint: true })}
@@ -225,20 +331,19 @@ function PlanForm({ initial, onSaved, onCancel, currentUserId }) {
   );
 }
 
-function ReportGenerator({ departments, monitor }) {
+function ReportGenerator({ users, departments, monitor, currentUserId }) {
   const [form, setForm] = useState({
     report_type: 'WEEKLY',
     title: '',
     period_start: '',
     period_end: '',
     content: '',
-    shared_department_ids: [],
+    shared_user_ids: [],
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [reports, setReports] = useState([]);
   const [scope, setScope] = useState('mine');
-  const [deptSearch, setDeptSearch] = useState('');
 
   const loadReports = async () => {
     try {
@@ -251,35 +356,27 @@ function ReportGenerator({ departments, monitor }) {
 
   useEffect(() => { loadReports().catch(() => {}); }, [scope]);
 
-  const filteredDepts = useMemo(() => {
-    const q = deptSearch.trim().toLowerCase();
-    if (!q) return departments;
-    return departments.filter((d) => String(d.name || '').toLowerCase().includes(q));
-  }, [departments, deptSearch]);
-
-  const toggleDept = (id) => {
-    const n = Number(id);
-    setForm((prev) => ({
-      ...prev,
-      shared_department_ids: prev.shared_department_ids.includes(n)
-        ? prev.shared_department_ids.filter((x) => x !== n)
-        : [...prev.shared_department_ids, n],
-    }));
-  };
-
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
     setMessage(null);
     try {
       await api.post('/employee-plans/reports', {
-        ...form,
+        report_type: form.report_type,
         title: form.title.trim(),
+        period_start: form.period_start,
+        period_end: form.period_end,
         content: form.content || null,
-        shared_department_ids: form.shared_department_ids,
+        shared_user_ids: form.shared_user_ids,
       });
-      setMessage({ type: 'success', text: 'Report created. Shared departments were notified.' });
-      setForm((prev) => ({ ...prev, title: '', content: '', shared_department_ids: [] }));
+      const n = form.shared_user_ids.length;
+      setMessage({
+        type: 'success',
+        text: n
+          ? `Report created. ${n} selected user${n === 1 ? '' : 's'} notified.`
+          : 'Report created (not shared with anyone).',
+      });
+      setForm((prev) => ({ ...prev, title: '', content: '', shared_user_ids: [] }));
       await loadReports();
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Could not create report' });
@@ -325,35 +422,15 @@ function ReportGenerator({ departments, monitor }) {
             placeholder="Write the plan report content…"
           />
         </div>
-        <div className="space-y-2">
-          <p className={labelClass}>Share to departments (they get notified)</p>
-          <input
-            className={`${inputClass} max-w-sm`}
-            placeholder="Search departments…"
-            value={deptSearch}
-            onChange={(e) => setDeptSearch(e.target.value)}
-          />
-          <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
-            {filteredDepts.map((d) => (
-              <label
-                key={d.id}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 cursor-pointer ${
-                  form.shared_department_ids.includes(Number(d.id))
-                    ? 'bg-[#2f5d31] text-white ring-[#2f5d31]'
-                    : 'bg-gray-50 text-gray-700 ring-gray-200'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={form.shared_department_ids.includes(Number(d.id))}
-                  onChange={() => toggleDept(d.id)}
-                />
-                {d.name}
-              </label>
-            ))}
-          </div>
-        </div>
+        <UserSharePicker
+          users={users}
+          departments={departments}
+          selectedIds={form.shared_user_ids}
+          onChange={(ids) => setForm((prev) => ({ ...prev, shared_user_ids: ids }))}
+          excludeUserId={currentUserId}
+          label="Share with specific users (they get notified)"
+          hint="Use department filter to find people, or Select all in department. Only checked users are notified."
+        />
         <button type="submit" disabled={saving} className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
           {saving ? 'Saving…' : 'Create & share report'}
         </button>
@@ -364,7 +441,7 @@ function ReportGenerator({ departments, monitor }) {
           <h3 className="text-sm font-semibold text-gray-800">Reports</h3>
           <div className="flex gap-2">
             <button type="button" onClick={() => setScope('mine')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'mine' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>Mine</button>
-            <button type="button" onClick={() => setScope('shared')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'shared' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>Shared to my dept</button>
+            <button type="button" onClick={() => setScope('shared')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'shared' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>Shared with me</button>
             {monitor && (
               <button type="button" onClick={() => setScope('all')} className={`rounded-lg px-3 py-1 text-xs font-medium ${scope === 'all' ? 'bg-[#2f5d31] text-white' : 'bg-gray-100'}`}>All</button>
             )}
@@ -396,7 +473,7 @@ export function EmployeePlansPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const monitor = canMonitorPlans(user);
-  const { departments } = useUsersAndDepartments();
+  const { users, departments } = useUsersAndDepartments();
   const tabs = useMemo(() => {
     const list = [
       { value: 'mine', label: 'My plans' },
@@ -486,7 +563,7 @@ export function EmployeePlansPage() {
       </div>
 
       {section === 'reports' ? (
-        <ReportGenerator departments={departments} monitor={monitor} />
+        <ReportGenerator users={users} departments={departments} monitor={monitor} currentUserId={user?.id} />
       ) : (
         <>
           {showCreate && (

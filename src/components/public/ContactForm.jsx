@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { publicApi } from '../../services/api';
+import RichTextEditor from '../RichTextEditor';
+import { toPlainText } from '../../utils/sanitize';
 
 export default function ContactForm({ withSubject = false, withPhone = false }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -11,6 +13,12 @@ export default function ContactForm({ withSubject = false, withPhone = false }) 
 
   const submit = async (event) => {
     event.preventDefault();
+    const plain = toPlainText(form.message || '');
+    if (!plain.trim()) {
+      setError(true);
+      setStatus('Please enter a message.');
+      return;
+    }
     setSending(true);
     setStatus('');
     try {
@@ -42,14 +50,13 @@ export default function ContactForm({ withSubject = false, withPhone = false }) 
       {withPhone ? (
         <input className="public-input" type="tel" value={form.phone} onChange={setField('phone')} placeholder="Phone Number" />
       ) : null}
-      <textarea
-        className="public-textarea"
-        value={form.message}
-        onChange={setField('message')}
-        placeholder={withSubject ? 'Your Message' : 'Message'}
-        rows={withSubject ? 5 : 5}
-        required
-      />
+      <div className="rounded-md overflow-hidden bg-white">
+        <RichTextEditor
+          value={form.message}
+          onChange={(html) => setForm((current) => ({ ...current, message: html }))}
+          placeholder={withSubject ? 'Your Message' : 'Message'}
+        />
+      </div>
       {status ? (
         <div className={`rounded px-3 py-2 text-sm ${error ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           {status}

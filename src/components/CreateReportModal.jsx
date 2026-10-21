@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, FileSpreadsheet, Plus, Trash2, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { canPublishReport } from '../utils/reportPermissions';
+import RichTextEditor from './RichTextEditor';
 
 export const CreateReportModal = ({ 
   isOpen, 
@@ -220,11 +221,9 @@ export const CreateReportModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-[#2f5d31] focus:border-[#2f5d31]"
+                  onChange={(html) => setFormData((prev) => ({ ...prev, description: html }))}
                   placeholder="Enter report description"
                 />
               </div>

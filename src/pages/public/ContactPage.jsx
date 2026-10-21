@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageBanner from '../../components/public/PageBanner';
 import ContactForm from '../../components/public/ContactForm';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 import { MAP_EMBED } from '../../components/public/publicUi';
 
@@ -35,7 +36,9 @@ export default function ContactPage() {
           <div className="w-[27%] min-w-[240px] min-h-[120px] bg-[#6b4423] rounded-lg p-6 text-white flex flex-col items-center justify-center hover:-translate-y-1">
             <i className="fas fa-map-marker-alt text-[32px] mb-4" />
             <h5 className="text-base font-semibold mb-2 uppercase tracking-wide">VISIT OUR OFFICE</h5>
-            <p className="text-[13px] m-0">{address}</p>
+            <div className="text-[13px] m-0 [&_*]:text-white [&_a]:text-white">
+              <RichHtml html={address} className="prose prose-sm max-w-none text-white" empty="NR5, Kicukiro, Gahanga KK 15 Rd" />
+            </div>
           </div>
           <div className="w-[27%] min-w-[240px] min-h-[120px] bg-[#6b4423] rounded-lg p-6 text-white flex flex-col items-center justify-center hover:-translate-y-1">
             <i className="fas fa-envelope text-[32px] mb-4" />

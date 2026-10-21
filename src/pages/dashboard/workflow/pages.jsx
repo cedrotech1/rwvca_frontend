@@ -129,7 +129,7 @@ export const CreatePermissionPage = () => (
     notifyTitle="Notify recipients as"
     fields={[
       { name: 'title', label: 'Permission Title', required: true, placeholder: 'Enter a clear permission title...', width: 'full' },
-      { name: 'description', label: 'Permission Description / Request', type: 'textarea', required: true, width: 'full' },
+      { name: 'description', label: 'Permission Description / Request', type: 'richtext', required: true, width: 'full' },
       { name: 'start_time', label: 'Permission Time Period (start)', type: 'datetime-local', placeholder: 'Select start date and time...' },
       { name: 'end_time', label: 'Permission Time Period (end)', type: 'datetime-local', placeholder: 'Select end date and time...' },
       { name: 'attachment', label: 'Attachment (Optional)', type: 'file' },
@@ -155,7 +155,7 @@ export const CreateTicketPage = () => (
     notifyTitle="Notify staff as"
     fields={[
       { name: 'title', label: 'Title', required: true, width: 'full' },
-      { name: 'description', label: 'Description', type: 'textarea', required: true, width: 'full' },
+      { name: 'description', label: 'Description', type: 'richtext', required: true, width: 'full' },
       { name: 'category', label: 'Category', type: 'select', options: [
         { value: 'General', label: 'General' },
         { value: 'Technical', label: 'Technical' },
@@ -193,7 +193,7 @@ export const CreateTodoPage = () => (
       { name: 'from_datetime', label: 'From Date & Time', type: 'datetime-local' },
       { name: 'to_datetime', label: 'To Date & Time', type: 'datetime-local' },
       { name: 'due_date', label: 'Due Date', type: 'date' },
-      { name: 'description', label: 'Description', type: 'textarea', width: 'full' },
+      { name: 'description', label: 'Description', type: 'richtext', width: 'full' },
     ]}
   />
 );
@@ -599,7 +599,7 @@ export const VehicleDetailPage = () => (
       { key: 'title', label: 'Title' },
       { key: 'type', label: 'Type' },
       { key: 'type_other', label: 'Please specify' },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', format: 'html' },
       { key: 'date', label: 'Date', format: 'date' },
       { key: 'start_time', label: 'Start Time', format: 'datetime' },
       { key: 'end_time', label: 'End Time', format: 'datetime' },
@@ -705,7 +705,7 @@ export const MissionDetailPage = () => (
       { key: 'user.names', label: 'Employee Name' },
       { key: 'user.email', label: 'Email' },
       { key: 'user.role', label: 'Job title' },
-      { key: 'purpose', label: 'Purpose of travel' },
+      { key: 'purpose', label: 'Purpose of travel', format: 'html' },
       { key: 'destination', label: 'Destination' },
       { key: 'departure_date', label: 'Travel period (from)', format: 'date' },
       { key: 'return_date', label: 'Travel period (to)', format: 'date' },
@@ -729,7 +729,7 @@ export const TodoDetailPage = () => (
       { key: 'title', label: 'Task Title' },
       { key: 'priority', label: 'Priority' },
       { key: 'location', label: 'Location' },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', format: 'html' },
       { key: 'from_datetime', label: 'From Date & Time', format: 'datetime' },
       { key: 'to_datetime', label: 'To Date & Time', format: 'datetime' },
       { key: 'due_date', label: 'Due Date', format: 'date' },

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useReports } from '../contexts/ReportsContext';
 import { useAuth } from '../contexts/AuthContext';
-import { sanitizeHtml } from '../utils/sanitize';
+import { sanitizeHtml, toPlainText } from '../utils/sanitize';
 import { useNotification } from '../contexts/NotificationContext';
 import { useServices } from '../contexts/ServicesContext';
 import { useCategories } from '../contexts/CategoriesContext';
@@ -25,6 +25,7 @@ import {
   validateRequestTableRows,
 } from '../components/reportRequests/ReportRequestTableEditor';
 import { createEmptyTableRow } from '../utils/reportTableUtils';
+import RichHtml from '../components/RichHtml';
 import RichTextEditor from '../components/RichTextEditor';
 import { CreateReportHeading } from '../components/PageHeading';
 import { canCreateReport, createsGeneralReport, canPublishReport } from '../utils/reportPermissions';
@@ -488,7 +489,9 @@ export const CreateReportPage = () => {
               <strong className="text-[#2f5d31]">Responding to Head Office request:</strong>{' '}
               {reportRequest?.title || 'Report request'}
               {reportRequest?.description && (
-                <p className="mt-1 text-gray-600">{reportRequest.description}</p>
+                <div className="mt-1">
+                  <RichHtml html={reportRequest.description} className="prose prose-sm max-w-none text-gray-600" empty="" />
+                </div>
               )}
             </>
           )}
@@ -574,7 +577,7 @@ export const CreateReportPage = () => {
                       <div className="pr-8 font-medium text-gray-900">{category.name}</div>
                       {category.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                          {category.description}
+                          {toPlainText(category.description)}
                         </p>
                       )}
                     </button>
@@ -913,13 +916,9 @@ export const CreateReportPage = () => {
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Description (if any)
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, description: e.target.value }))
-                    }
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-0 bg-gray-100 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(html) => setFormData((prev) => ({ ...prev, description: html }))}
                     placeholder="Enter report description"
                   />
                 </div>
@@ -929,26 +928,20 @@ export const CreateReportPage = () => {
                     <label className="mb-2 block text-sm font-medium text-gray-700">
                       Challenge (if any)
                     </label>
-                    <textarea
+                    <RichTextEditor
                       value={formData.challenge}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, challenge: e.target.value }))
-                      }
-                      rows={3}
-                      className="mt-1 block w-full rounded-md border-0 bg-gray-100 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(html) => setFormData((prev) => ({ ...prev, challenge: html }))}
+                      placeholder="Challenges…"
                     />
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700">
                       Way Forward (if any)
                     </label>
-                    <textarea
+                    <RichTextEditor
                       value={formData.wayForward}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, wayForward: e.target.value }))
-                      }
-                      rows={3}
-                      className="mt-1 block w-full rounded-md border-0 bg-gray-100 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(html) => setFormData((prev) => ({ ...prev, wayForward: html }))}
+                      placeholder="Way forward…"
                     />
                   </div>
                 </div>

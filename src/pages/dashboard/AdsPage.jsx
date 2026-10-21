@@ -18,7 +18,7 @@ export default function AdsPage() {
       ]}
       createFields={[
         { name: 'title', label: 'Title', required: true },
-        { name: 'description', label: 'Description', type: 'textarea', required: true },
+        { name: 'description', label: 'Description', type: 'richtext', required: true },
         { name: 'status', label: 'Status', type: 'select', required: true, options: [
           { value: 'active', label: 'Active' },
           { value: 'inactive', label: 'Inactive' },

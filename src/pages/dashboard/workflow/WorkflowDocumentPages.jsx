@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../../services/api';
+import { toPlainText } from '../../../utils/sanitize';
 import OfficialDocument, {
   FormRow,
   SignatureLine,
@@ -70,7 +71,7 @@ export function MissionDocumentPage() {
           <FormRow label="Name :">{item.user?.names}</FormRow>
           <FormRow label="Job title :">{item.user?.role}</FormRow>
           <FormRow label="Authorized to travel to:">{item.destination}</FormRow>
-          <FormRow label="Purpose :">{item.purpose}</FormRow>
+          <FormRow label="Purpose :">{toPlainText(item.purpose) || '—'}</FormRow>
           <FormRow label="Sponsor :">RWVCA</FormRow>
           <FormRow label="Departure date :">{formatDocDate(item.departure_date)}</FormRow>
           <FormRow label="Date of return :">{formatDocDate(item.return_date)}</FormRow>
@@ -245,7 +246,7 @@ export function VehicleDocumentPage() {
           <FormRow label="Department :">{item.department?.name}</FormRow>
           <FormRow label="Title :">{item.title}</FormRow>
           <FormRow label="Type :">{item.type === 'Other' ? item.type_other || 'Other' : item.type}</FormRow>
-          <FormRow label="Description :">{item.description}</FormRow>
+          <FormRow label="Description :">{toPlainText(item.description) || '—'}</FormRow>
           <FormRow label="Date :">{formatDocDate(item.date)}</FormRow>
           <FormRow label="Start time :">{item.start_time || '—'}</FormRow>
           <FormRow label="End time :">{item.end_time || '—'}</FormRow>

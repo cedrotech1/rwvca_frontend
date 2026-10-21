@@ -45,6 +45,7 @@ import {
   exportReportTableToExcel,
 } from '../utils/reportTableUtils';
 import { sanitizeHtml } from '../utils/sanitize';
+import RichHtml from '../components/RichHtml';
 import ReportComments from '../components/ReportComments';
 import { commentService } from '../services/api/commentService';
 import { formatUserRole } from '../utils/userRoleLabels';
@@ -676,7 +677,7 @@ ${report.wayForward}
           <div className="flex justify-between items-start mb-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{report.title}</h2>
-              <p className="text-gray-600">{report.description}</p>
+              <RichHtml html={report.description} className="prose prose-sm max-w-none text-gray-600" empty="" />
             </div>
             <div className="flex items-center flex-wrap gap-2 justify-end">
               {showPublishButton && (
@@ -939,7 +940,7 @@ ${report.wayForward}
                       <div className="p-6 bg-white">
                         <div className="rich-text-editor max-w-none">
                           {sanitizeHtml(report.text_report) ? (
-                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(report.text_report) }} />
+                            <RichHtml html={report.text_report} className="prose prose-sm max-w-none" empty="" />
                           ) : (
                             <div className="text-gray-400 italic">No content available</div>
                           )}
@@ -1092,9 +1093,9 @@ ${report.wayForward}
 
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">
-                    {report.description || 'No description provided'}
-                  </p>
+                  <div className="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">
+                    <RichHtml html={report.description} empty="No description provided" />
+                  </div>
                 </div>
 
                 {/* Service Information */}
@@ -1116,7 +1117,7 @@ ${report.wayForward}
                         <div className="md:col-span-2">
                           <dt className="text-sm text-gray-600">Service Description:</dt>
                           <dd className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">
-                            {report.service.description}
+                            <RichHtml html={report.service.description} />
                           </dd>
                         </div>
                       )}
@@ -1128,11 +1129,7 @@ ${report.wayForward}
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Challenge</h4>
                   <div className="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">
-                    {report.challenge ? (
-                      <p className="whitespace-pre-wrap">{report.challenge}</p>
-                    ) : (
-                      <p className="text-gray-400 italic">No challenges reported</p>
-                    )}
+                    <RichHtml html={report.challenge} empty="No challenges reported" />
                   </div>
                 </div>
 
@@ -1140,11 +1137,7 @@ ${report.wayForward}
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Way Forward</h4>
                   <div className="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">
-                    {report.wayForward ? (
-                      <p className="whitespace-pre-wrap">{report.wayForward}</p>
-                    ) : (
-                      <p className="text-gray-400 italic">No way forward specified</p>
-                    )}
+                    <RichHtml html={report.wayForward} empty="No way forward specified" />
                   </div>
                 </div>
               </div>

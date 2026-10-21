@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageBanner from '../../components/public/PageBanner';
 import SectionTitle from '../../components/public/SectionTitle';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 
 function formatFee(category) {
@@ -42,7 +43,7 @@ export default function MembershipPage() {
                 <li key={category.category_id} className="pl-6 relative">
                   <span className="absolute left-0 text-xl">•</span>
                   <strong className="block text-[1.1rem] mb-1">{category.category_name} Category:</strong>
-                  {category.description}
+                  <RichHtml html={category.description} className="prose prose-sm max-w-none text-white [&_*]:text-white" empty="" />
                 </li>
               ))}
               {!data.categories?.length ? <li>No membership categories available at the moment.</li> : null}

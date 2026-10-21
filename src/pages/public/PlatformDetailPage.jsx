@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PageBanner from '../../components/public/PageBanner';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 import { fileUrl } from '../../services/api/config';
 
@@ -67,7 +68,11 @@ export default function PlatformDetailPage() {
           {item ? (
             <>
               <h1 className="text-[#6b4226] font-bold text-[32px] mb-5">{item.name}</h1>
-              {item.description ? <div className="text-base leading-relaxed text-[#444] mb-8 pb-5 border-b border-[#eee] whitespace-pre-wrap">{item.description}</div> : null}
+              {item.description ? (
+                <div className="text-base leading-relaxed text-[#444] mb-8 pb-5 border-b border-[#eee]">
+                  <RichHtml html={item.description} className="prose max-w-none text-[#444]" empty="" />
+                </div>
+              ) : null}
               {Object.entries(grouped).map(([title, subsections]) => (
                 <AccordionSection key={title} title={title}>
                   {Object.entries(subsections).map(([subtitle, values]) => (
@@ -75,7 +80,9 @@ export default function PlatformDetailPage() {
                       {subtitle !== 'General' ? <h4 className="text-[#3d5166] font-medium mb-2">{subtitle}</h4> : null}
                       <ul className="list-disc pl-5 text-[#4a5568]">
                         {values.map((value) => (
-                          <li key={value} className="mb-1 whitespace-pre-wrap">{value}</li>
+                          <li key={value} className="mb-1">
+                            <RichHtml html={value} className="prose prose-sm max-w-none inline" empty="" />
+                          </li>
                         ))}
                       </ul>
                     </div>

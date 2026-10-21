@@ -8,6 +8,7 @@ import RichTextEditor from '../../components/RichTextEditor';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { DataTable, inputClass, labelClass, StatusBadge } from '../../components/ui/dataUi';
+import { toPlainText } from '../../utils/sanitize';
 import { formatPhpDateTime } from './workflow/helpers';
 import { canManageInventory as userCanManageInventory } from '../../utils/rwvcaAccess';
 
@@ -222,7 +223,7 @@ export default function InventoryPage() {
     { key: 'name', label: 'Item', render: (row) => (
       <div>
         <p className="font-medium text-gray-900">{row.name}</p>
-        {row.description && <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{row.description}</p>}
+        {row.description && <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{toPlainText(row.description)}</p>}
       </div>
     )},
     { key: 'category', label: 'Category', render: (row) => row.category ? <StatusBadge value={row.category} /> : <span className="text-gray-300">—</span> },

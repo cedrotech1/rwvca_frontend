@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageBanner from '../../components/public/PageBanner';
 import SectionTitle from '../../components/public/SectionTitle';
+import RichHtml from '../../components/RichHtml';
 import { publicApi } from '../../services/api';
 import { ABOUT_COPY } from '../../components/public/publicUi';
 
@@ -93,7 +94,7 @@ export default function AboutPage() {
           <div className="bg-white rounded-xl p-8 max-w-[600px] w-full max-h-[80vh] overflow-y-auto relative" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="absolute top-3 right-4 text-3xl text-gray-400" onClick={() => setSelected(null)}>&times;</button>
             <h3 className="text-[#6b4423] text-2xl mb-4 pb-3 border-b-2 border-black text-justify">{selected.title}</h3>
-            <div className="text-[#333] leading-relaxed text-justify whitespace-pre-wrap">{selected.content}</div>
+            <RichHtml html={selected.content} className="prose max-w-none text-[#333] leading-relaxed text-justify" empty="" />
           </div>
         </div>
       ) : null}

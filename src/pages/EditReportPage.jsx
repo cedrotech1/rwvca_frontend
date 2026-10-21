@@ -786,11 +786,9 @@ export const EditReportPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description (if any)
               </label>
-              <textarea
+              <RichTextEditor
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="mt-1 block w-full bg-gray-100 border-0 rounded-md px-3 py-2 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                onChange={(html) => setFormData((prev) => ({ ...prev, description: html }))}
                 placeholder="Enter report description"
               />
             </div>
@@ -800,22 +798,20 @@ export const EditReportPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Challenge (if any)
                 </label>
-                <textarea
+                <RichTextEditor
                   value={formData.challenge}
-                  onChange={(e) => setFormData(prev => ({ ...prev, challenge: e.target.value }))}
-                  rows={3}
-                  className="mt-1 block w-full bg-gray-100 border-0 rounded-md px-3 py-2 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  onChange={(html) => setFormData((prev) => ({ ...prev, challenge: html }))}
+                  placeholder="Challenges…"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Way Forward (if any)
                 </label>
-                <textarea
+                <RichTextEditor
                   value={formData.wayForward}
-                  onChange={(e) => setFormData(prev => ({ ...prev, wayForward: e.target.value }))}
-                  rows={3}
-                  className="mt-1 block w-full bg-gray-100 border-0 rounded-md px-3 py-2 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  onChange={(html) => setFormData((prev) => ({ ...prev, wayForward: html }))}
+                  placeholder="Way forward…"
                 />
               </div>
             </div>
