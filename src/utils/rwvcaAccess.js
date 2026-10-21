@@ -32,6 +32,7 @@ const GENERAL_ITEMS = [
   { id: 'communications', label: 'Communications', path: '/dashboard/communications', privilege: 'menu.communications' },
   { id: 'assets', label: 'Assets', path: '/dashboard/assets', privilege: 'menu.assets' },
   { id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans', privilege: 'menu.employee_plans' },
+  { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring' },
   { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', privilege: 'menu.notifications' },
   { id: 'account', label: 'Account', path: '/dashboard/profile', privilege: 'menu.account' },
   { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance', privilege: 'menu.attendance' },
@@ -59,7 +60,6 @@ const ANALYSIS_ITEMS = [
   { id: 'requisition-analysis', label: 'Requisition Analysis', path: '/dashboard/requisition-analysis', privilege: 'menu.analysis.requisition' },
   { id: 'membership-analysis', label: 'Membership Analysis', path: '/dashboard/membership-analysis', privilege: 'menu.analysis.membership' },
   { id: 'members-analysis', label: 'Members Analysis', path: '/dashboard/members-analysis', privilege: 'menu.analysis.members' },
-  { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring', privilege: 'menu.staff_monitoring' },
 ];
 
 const TOP_LINKS = [
@@ -132,6 +132,7 @@ export function getMenuForRole(role, user = null) {
   if (!privs) {
     return [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+      { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring' },
       { id: 'account', label: 'Account', path: '/dashboard/profile' },
     ];
   }
@@ -237,7 +238,14 @@ function collectPaths(items, into = []) {
   return into;
 }
 
-const ALWAYS_ALLOWED = ['/dashboard', '/dashboard/statistics', '/dashboard/profile', '/dashboard/notifications', '/dashboard/my-analysis'];
+const ALWAYS_ALLOWED = [
+  '/dashboard',
+  '/dashboard/statistics',
+  '/dashboard/profile',
+  '/dashboard/notifications',
+  '/dashboard/my-analysis',
+  '/dashboard/staff-monitoring',
+];
 
 export function canReviewLists(user) {
   return hasPrivilege(user, 'workflow.review');
@@ -345,8 +353,13 @@ export function canAuthorizeSupply(user) {
   return String(user?.role || '').toLowerCase() === 'ed';
 }
 
+/** Privilege to see all-staff monitoring (everyone still has their own dashboard). */
 export function canMonitorPlans(user) {
   return hasPrivilege(user, 'plans.monitor') || hasPrivilege(user, 'menu.staff_monitoring');
+}
+
+export function canSeeAllStaffMonitoring(user) {
+  return canMonitorPlans(user);
 }
 
 export function canManagePlans(user) {

@@ -17,7 +17,7 @@ import RichTextEditor from '../../../components/RichTextEditor';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
-import { canMonitorPlans, hasPrivilege } from '../../../utils/rwvcaAccess';
+import { canMonitorPlans, canSeeAllStaffMonitoring } from '../../../utils/rwvcaAccess';
 
 const PLAN_STATUSES = ['draft', 'pending', 'ongoing', 'complete', 'postponed'];
 const REPORT_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
@@ -555,11 +555,9 @@ export function EmployeePlansPage() {
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => setSection('plans')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'plans' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Plans</button>
         <button type="button" onClick={() => setSection('reports')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${section === 'reports' ? 'bg-[#2f5d31] text-white' : 'bg-white ring-1 ring-gray-200 text-gray-700'}`}>Reports</button>
-        {monitor && (
-          <Link to="/dashboard/staff-monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-[#2f5d31]/10 text-[#2f5d31] ring-1 ring-[#2f5d31]/30">
-            <BarChart3 className="h-4 w-4" /> Staff monitoring
-          </Link>
-        )}
+        <Link to="/dashboard/staff-monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-[#2f5d31]/10 text-[#2f5d31] ring-1 ring-[#2f5d31]/30">
+          <BarChart3 className="h-4 w-4" /> Staff monitoring
+        </Link>
       </div>
 
       {section === 'reports' ? (
@@ -894,7 +892,7 @@ export function StaffMonitoringPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { departments } = useUsersAndDepartments();
-  const allowed = canMonitorPlans(user) || hasPrivilege(user, 'menu.staff_monitoring');
+  const canSeeAll = canSeeAllStaffMonitoring(user);
   const [periodStart, setPeriodStart] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
@@ -917,9 +915,9 @@ export function StaffMonitoringPage() {
       const res = await api.get('/employee-plans/monitoring', {
         period_start: periodStart,
         period_end: periodEnd,
-        search: search || undefined,
+        search: canSeeAll ? (search || undefined) : undefined,
         sort,
-        department_id: departmentId || undefined,
+        department_id: canSeeAll ? (departmentId || undefined) : undefined,
       });
       setData(res.data);
       setError('');
@@ -932,13 +930,8 @@ export function StaffMonitoringPage() {
   };
 
   useEffect(() => {
-    if (!allowed) return;
     load().catch(() => {});
-  }, [allowed, sort, departmentId]);
-
-  if (!allowed) {
-    return <PageHeading icon={<BarChart3 className="h-6 w-6" />} title="Staff Monitoring" subtitle="Access denied" showBack backTo="/dashboard" />;
-  }
+  }, [canSeeAll, sort, departmentId]);
 
   const statusCounts = data?.status_counts || {};
   const maxStatus = Math.max(1, ...Object.values(statusCounts).map(Number));
@@ -947,6 +940,7 @@ export function StaffMonitoringPage() {
   const login = data?.login || {};
   const deptStats = data?.department_stats || [];
   const maxDept = Math.max(1, ...deptStats.map((d) => Number(d.plans || 0)));
+  const me = ranking[0] || null;
 
   const deletePlan = async (planId) => {
     if (!window.confirm(`Delete plan #${planId}?`)) return;
@@ -968,11 +962,15 @@ export function StaffMonitoringPage() {
     <div className="space-y-4">
       <PageHeading
         icon={<BarChart3 className="h-6 w-6" />}
-        title="Staff Monitoring"
-        subtitle="Performance, collaboration rates, login activity, missing plans & report sharing"
+        title={canSeeAll ? 'Staff Monitoring' : 'My Monitoring'}
+        subtitle={
+          canSeeAll
+            ? 'Organization-wide performance, collaboration, login activity, missing plans & report sharing'
+            : 'Your personal plan performance, collaboration, login activity and reports for this period'
+        }
         showBack
         backTo="/dashboard/employee-plans"
-        actions={[
+        actions={canSeeAll ? [
           {
             label: 'Export ranking CSV',
             onClick: () => exportCsv('staff-plan-ranking', [
@@ -986,8 +984,14 @@ export function StaffMonitoringPage() {
               { key: 'last_login_at', label: 'Last login' },
             ], ranking),
           },
-        ]}
+        ] : []}
       />
+
+      {!canSeeAll && (
+        <p className="rounded-lg bg-[#2f5d31]/5 px-3 py-2 text-xs text-[#2f5d31] ring-1 ring-[#2f5d31]/20">
+          Showing your own monitoring dashboard. Staff with the monitoring privilege can see all staff.
+        </p>
+      )}
 
       <form
         className="flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100"
@@ -1001,28 +1005,32 @@ export function StaffMonitoringPage() {
           Period end
           <input type="date" className={`mt-1 ${inputClass}`} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
         </label>
-        <label className="text-sm text-gray-600">
-          Department
-          <select className={`mt-1 ${inputClass}`} value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
-            <option value="">All departments</option>
-            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
-        </label>
-        <label className="text-sm text-gray-600">
-          Sort by
-          <select className={`mt-1 ${inputClass}`} value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="completed">Completed plans</option>
-            <option value="completion_rate">Completion %</option>
-            <option value="collaboration_rate">Collaboration %</option>
-            <option value="plans">Plan count</option>
-            <option value="last_login">Last login</option>
-            <option value="name">Name</option>
-          </select>
-        </label>
-        <label className="text-sm text-gray-600 grow min-w-[180px]">
-          Search staff
-          <input className={`mt-1 ${inputClass}`} placeholder="Name, email, role, dept…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
+        {canSeeAll && (
+          <>
+            <label className="text-sm text-gray-600">
+              Department
+              <select className={`mt-1 ${inputClass}`} value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+                <option value="">All departments</option>
+                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </label>
+            <label className="text-sm text-gray-600">
+              Sort by
+              <select className={`mt-1 ${inputClass}`} value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="completed">Completed plans</option>
+                <option value="completion_rate">Completion %</option>
+                <option value="collaboration_rate">Collaboration %</option>
+                <option value="plans">Plan count</option>
+                <option value="last_login">Last login</option>
+                <option value="name">Name</option>
+              </select>
+            </label>
+            <label className="text-sm text-gray-600 grow min-w-[180px]">
+              Search staff
+              <input className={`mt-1 ${inputClass}`} placeholder="Name, email, role, dept…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </label>
+          </>
+        )}
         <button type="submit" className="rounded-lg bg-[#2f5d31] px-4 py-2 text-sm font-medium text-white">Apply</button>
       </form>
 
@@ -1031,16 +1039,53 @@ export function StaffMonitoringPage() {
 
       {data && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-            <StatCard label="Staff" value={data.totals?.staff} />
-            <StatCard label="With plans" value={data.totals?.with_plans} />
-            <StatCard label="Missing plans" value={data.totals?.without_plans} tone="warn" />
+          <div className={`grid gap-3 sm:grid-cols-2 ${canSeeAll ? 'xl:grid-cols-4 2xl:grid-cols-8' : 'xl:grid-cols-4'}`}>
+            {canSeeAll && <StatCard label="Staff" value={data.totals?.staff} />}
+            {canSeeAll && <StatCard label="With plans" value={data.totals?.with_plans} />}
+            {canSeeAll && <StatCard label="Missing plans" value={data.totals?.without_plans} tone="warn" />}
             <StatCard label="Plans" value={data.totals?.plans} />
             <StatCard label="Completed" value={data.totals?.completed} />
             <StatCard label="Joint rate" value={`${data.totals?.joint_rate_percent ?? 0}%`} />
             <StatCard label="Reports (month)" value={data.totals?.reports_this_month} />
             <StatCard label="Shared reports" value={data.totals?.shared_reports_this_month} />
           </div>
+
+          {!canSeeAll && me && (
+            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">{me.names}</h3>
+                  <p className="text-xs text-gray-500">{me.role} · {me.department?.name || 'No dept'}</p>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <InfoTile label="Done %" value={`${me.completion_rate}%`} />
+                  <InfoTile label="Collab %" value={`${me.collaboration_rate}%`} />
+                  <InfoTile label="Last login" value={me.last_login_at ? String(me.last_login_at).slice(0, 10) : '—'} />
+                </div>
+              </div>
+              <ul className="space-y-2">
+                {(me.plans_preview || []).length === 0 && <li className="text-sm text-gray-400">No plans in this period</li>}
+                {(me.plans_preview || []).map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-800">{p.title}</p>
+                      <p className="text-xs text-gray-500">{String(p.start_date || '').slice(0, 10)} → {String(p.end_date || '').slice(0, 10)} · {p.status}</p>
+                    </div>
+                    <button type="button" className="rounded-lg bg-white px-2 py-1 text-xs ring-1 ring-gray-200" onClick={() => navigate(`/dashboard/employee-plans/${p.id}`)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="rounded-lg bg-[#2f5d31] px-3 py-2 text-sm font-medium text-white"
+                onClick={() => navigate('/dashboard/employee-plans')}
+              >
+                Open my plans
+              </button>
+            </div>
+          )}
 
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
@@ -1073,123 +1118,152 @@ export function StaffMonitoringPage() {
             </div>
 
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-800">Portal access</h3>
+              <h3 className="text-sm font-semibold text-gray-800">{canSeeAll ? 'Portal access' : 'Your portal access'}</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <InfoTile label="Active 7 days" value={login.active_7d} />
-                <InfoTile label="Active 30 days" value={login.active_30d} />
-                <InfoTile label="Older login" value={login.older} />
-                <InfoTile label="Never logged in" value={login.never_logged_in} tone="warn" />
+                {canSeeAll ? (
+                  <>
+                    <InfoTile label="Active 7 days" value={login.active_7d} />
+                    <InfoTile label="Active 30 days" value={login.active_30d} />
+                    <InfoTile label="Older login" value={login.older} />
+                    <InfoTile label="Never logged in" value={login.never_logged_in} tone="warn" />
+                  </>
+                ) : (
+                  <>
+                    <InfoTile label="Last login" value={me?.last_login_at ? String(me.last_login_at).slice(0, 10) : '—'} />
+                    <InfoTile label="Login status" value={me?.login_bucket === 'never' ? 'Never' : me?.login_bucket || '—'} />
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-3">
-            <div className="xl:col-span-2 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff ranking & plans</h3>
-              <div className="max-h-[28rem] overflow-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-left text-[11px] uppercase tracking-wide text-gray-400 sticky top-0 bg-white">
-                    <tr>
-                      <th className="py-2 pr-2">#</th>
-                      <th className="pr-2">Name</th>
-                      <th className="pr-2">Dept</th>
-                      <th className="pr-2">Plans</th>
-                      <th className="pr-2">Done</th>
-                      <th className="pr-2">Done %</th>
-                      <th className="pr-2">Collab %</th>
-                      <th className="pr-2">Login</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {ranking.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50">
-                        <td className="py-2 pr-2">{row.rank}</td>
-                        <td className="pr-2 font-medium">{row.names}</td>
-                        <td className="pr-2 text-xs text-gray-500">{row.department?.name || '—'}</td>
-                        <td className="pr-2">{row.plan_count}</td>
-                        <td className="pr-2">{row.completed_plans}</td>
-                        <td className="pr-2">{row.completion_rate}%</td>
-                        <td className="pr-2">{row.collaboration_rate}%</td>
-                        <td className="pr-2 text-xs text-gray-500">{row.last_login_at ? String(row.last_login_at).slice(0, 10) : '—'}</td>
-                        <td>
-                          <button type="button" className="text-[#2f5d31] font-medium text-xs" onClick={() => setSelectedUser(row)}>
-                            View plans
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {canSeeAll && (
+            <>
+              <div className="grid gap-4 xl:grid-cols-3">
+                <div className="xl:col-span-2 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff ranking & plans</h3>
+                  <div className="max-h-[28rem] overflow-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="text-left text-[11px] uppercase tracking-wide text-gray-400 sticky top-0 bg-white">
+                        <tr>
+                          <th className="py-2 pr-2">#</th>
+                          <th className="pr-2">Name</th>
+                          <th className="pr-2">Dept</th>
+                          <th className="pr-2">Plans</th>
+                          <th className="pr-2">Done</th>
+                          <th className="pr-2">Done %</th>
+                          <th className="pr-2">Collab %</th>
+                          <th className="pr-2">Login</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {ranking.map((row) => (
+                          <tr key={row.id} className="hover:bg-gray-50">
+                            <td className="py-2 pr-2">{row.rank}</td>
+                            <td className="pr-2 font-medium">{row.names}</td>
+                            <td className="pr-2 text-xs text-gray-500">{row.department?.name || '—'}</td>
+                            <td className="pr-2">{row.plan_count}</td>
+                            <td className="pr-2">{row.completed_plans}</td>
+                            <td className="pr-2">{row.completion_rate}%</td>
+                            <td className="pr-2">{row.collaboration_rate}%</td>
+                            <td className="pr-2 text-xs text-gray-500">{row.last_login_at ? String(row.last_login_at).slice(0, 10) : '—'}</td>
+                            <td>
+                              <button type="button" className="text-[#2f5d31] font-medium text-xs" onClick={() => setSelectedUser(row)}>
+                                View plans
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-            <div className="space-y-4">
-              <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Plans by department</h3>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {deptStats.map((d) => (
-                    <div key={d.department}>
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>{d.department}</span>
-                        <span>{d.plans} plans · {d.completed} done</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-cyan-600" style={{ width: `${(Number(d.plans) / maxDept) * 100}%` }} />
-                      </div>
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Plans by department</h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {deptStats.map((d) => (
+                        <div key={d.department}>
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>{d.department}</span>
+                            <span>{d.plans} plans · {d.completed} done</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-cyan-600" style={{ width: `${(Number(d.plans) / maxDept) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Recent activity</h3>
+                    <ul className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                      {(data.recent_activity || []).length === 0 && <li className="text-gray-400">No recent logs</li>}
+                      {(data.recent_activity || []).map((log) => (
+                        <li key={log.id} className="border-b border-gray-50 pb-2">
+                          <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
+                          {log.plan?.title ? ` · ${log.plan.title}` : ''}
+                          <div className="text-gray-400">{log.actor?.names || 'System'} · {String(log.created_at || '').slice(0, 16).replace('T', ' ')}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Recent activity</h3>
-                <ul className="space-y-2 text-xs max-h-64 overflow-y-auto">
-                  {(data.recent_activity || []).length === 0 && <li className="text-gray-400">No recent logs</li>}
-                  {(data.recent_activity || []).map((log) => (
-                    <li key={log.id} className="border-b border-gray-50 pb-2">
-                      <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
-                      {log.plan?.title ? ` · ${log.plan.title}` : ''}
-                      <div className="text-gray-400">{log.actor?.names || 'System'} · {String(log.created_at || '').slice(0, 16).replace('T', ' ')}</div>
-                    </li>
-                  ))}
-                </ul>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff missing plans</h3>
+                  <DataTable
+                    empty="Everyone has plans in this period"
+                    columns={[
+                      { key: 'names', label: 'Name' },
+                      { key: 'role', label: 'Role' },
+                      { key: 'department', label: 'Dept', value: (r) => r.department?.name || '—' },
+                      { key: 'last_login_at', label: 'Last login', value: (r) => (r.last_login_at ? String(r.last_login_at).slice(0, 10) : '—') },
+                    ]}
+                    rows={data.staff_without_plans || []}
+                  />
+                </div>
+                <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3">No shared report this month</h3>
+                  <DataTable
+                    empty="All shared reports"
+                    columns={[
+                      { key: 'names', label: 'Name' },
+                      { key: 'role', label: 'Role' },
+                      { key: 'reports_this_month', label: 'Reports' },
+                      { key: 'shared_reports_this_month', label: 'Shared' },
+                    ]}
+                    rows={data.no_shared_reports_this_month || []}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          {!canSeeAll && (
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Staff missing plans</h3>
-              <DataTable
-                empty="Everyone has plans in this period"
-                columns={[
-                  { key: 'names', label: 'Name' },
-                  { key: 'role', label: 'Role' },
-                  { key: 'department', label: 'Dept', value: (r) => r.department?.name || '—' },
-                  { key: 'last_login_at', label: 'Last login', value: (r) => (r.last_login_at ? String(r.last_login_at).slice(0, 10) : '—') },
-                ]}
-                rows={data.staff_without_plans || []}
-              />
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Recent activity</h3>
+              <ul className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                {(data.recent_activity || []).length === 0 && <li className="text-gray-400">No recent logs</li>}
+                {(data.recent_activity || []).map((log) => (
+                  <li key={log.id} className="border-b border-gray-50 pb-2">
+                    <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
+                    {log.plan?.title ? ` · ${log.plan.title}` : ''}
+                    <div className="text-gray-400">{log.actor?.names || 'System'} · {String(log.created_at || '').slice(0, 16).replace('T', ' ')}</div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">No shared report this month</h3>
-              <DataTable
-                empty="All shared reports"
-                columns={[
-                  { key: 'names', label: 'Name' },
-                  { key: 'role', label: 'Role' },
-                  { key: 'reports_this_month', label: 'Reports' },
-                  { key: 'shared_reports_this_month', label: 'Shared' },
-                ]}
-                rows={data.no_shared_reports_this_month || []}
-              />
-            </div>
-          </div>
+          )}
         </>
       )}
 
-      {selectedUser && (
+      {selectedUser && canSeeAll && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedUser(null)}>
           <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl space-y-3" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-2">
