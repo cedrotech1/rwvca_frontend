@@ -12,7 +12,6 @@ const CREATE_ITEMS = [
   { id: 'create-document', label: 'Document', path: '/dashboard/create/documents', privilege: 'menu.create.document' },
   { id: 'create-report', label: 'Report', path: '/dashboard/create/reports', privilege: 'menu.create.report' },
   { id: 'create-membership-report', label: 'Membership Report', path: '/dashboard/create/membership-reports', privilege: 'menu.create.membership_report' },
-  { id: 'create-supply-requisition', label: 'Supply Requisition', path: '/dashboard/create/supply-requisitions', privilege: 'menu.create.supply_requisition' },
 ];
 
 const VIEW_ITEMS = [
@@ -25,7 +24,6 @@ const VIEW_ITEMS = [
   { id: 'view-documents', label: 'Documents', path: '/dashboard/documents', privilege: 'menu.view.documents' },
   { id: 'view-reports', label: 'Reports', path: '/dashboard/reports', privilege: 'menu.view.reports' },
   { id: 'view-membership-reports', label: 'Membership Reports', path: '/dashboard/membership-reports', privilege: 'menu.view.membership_reports' },
-  { id: 'view-supply-requisitions', label: 'Supply Requisitions', path: '/dashboard/supply-requisitions', privilege: 'menu.view.supply_requisitions' },
 ];
 
 const GENERAL_ITEMS = [
@@ -190,16 +188,27 @@ export function getMenuForRole(role, user = null) {
   if (privs.has('menu.members_dashboard') && !menu.some((m) => m.id === 'members-dashboard')) {
     menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'members-dashboard')));
   }
-  // Supply list also reachable via menu.supply_requisitions when view privilege is absent
+  // Kitchen/hygienic live under Requisitions (type tabs) — ensure View → Requisitions if only supply menu priv
   if (
-    privs.has('menu.supply_requisitions')
-    && !menu.some((m) => m.id === 'view-supply-requisitions' || m.id === 'supply-requisitions')
-    && !viewChildren.some((m) => m.id === 'view-supply-requisitions')
+    (privs.has('menu.supply_requisitions') || privs.has('menu.view.supply_requisitions'))
+    && !privs.has('menu.view.requisitions')
+    && !menu.some((m) => m.id === 'view-requisitions')
+    && !viewChildren.some((m) => m.id === 'view-requisitions')
   ) {
     const viewGroup = menu.find((m) => m.id === 'view');
-    const supplyItem = { id: 'view-supply-requisitions', label: 'Supply Requisitions', path: '/dashboard/supply-requisitions' };
-    if (viewGroup) viewGroup.children = [...(viewGroup.children || []), supplyItem];
-    else menu.push({ id: 'view', label: 'View', children: [supplyItem] });
+    const reqItem = { id: 'view-requisitions', label: 'Requisitions', path: '/dashboard/requisitions' };
+    if (viewGroup) viewGroup.children = [...(viewGroup.children || []), reqItem];
+    else menu.push({ id: 'view', label: 'View', children: [reqItem] });
+  }
+  if (
+    (privs.has('menu.create.supply_requisition') || privs.has('menu.supply_requisitions'))
+    && !privs.has('menu.create.requisition')
+    && !menu.some((m) => m.id === 'create-requisition')
+  ) {
+    const createGroup = menu.find((m) => m.id === 'create');
+    const createItem = { id: 'create-requisition', label: 'Requisition', path: '/dashboard/create/requisitions' };
+    if (createGroup) createGroup.children = [...(createGroup.children || []), createItem];
+    else menu.push({ id: 'create', label: 'Create', children: [createItem] });
   }
 
   const adminChildren = filterByPrivilege(ADMIN_SYSTEM_ITEMS, privs).map(stripPrivilegeMeta);

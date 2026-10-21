@@ -204,6 +204,7 @@ export const AppRouter = () => (
         <Route path="create/supply-requisitions" element={<CreateSupplyRequisitionPage />} />
 
         <Route path="requisitions" element={<RequisitionsListPage />} />
+        <Route path="requisitions/supply/:id" element={<SupplyRequisitionDetailPage />} />
         <Route path="requisitions/:id/edit" element={<CreateRequisitionPage />} />
         <Route path="requisitions/:id" element={<RequisitionDetailPage />} />
         <Route path="special-requisitions" element={<VehicleListPage />} />

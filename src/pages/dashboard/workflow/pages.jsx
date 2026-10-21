@@ -2,6 +2,7 @@ import CreateFormPage from './CreateFormPage';
 import ListPage from './ListPage';
 import DetailPage from './DetailPage';
 import CreateRequisitionPage from './CreateRequisitionPage';
+import UnifiedRequisitionsListPage from './UnifiedRequisitionsListPage';
 import CreateDocumentPage from './CreateDocumentPage';
 import DocumentsListPage from './DocumentsListPage';
 import DocumentDetailPage from './DocumentDetailPage';
@@ -268,35 +269,7 @@ const DATE_FILTERS = [
   { name: 'date_to', type: 'date', label: 'To Date' },
 ];
 
-export const RequisitionsListPage = () => (
-  <ListPage
-    title="Requisitions"
-    subtitle="Manage purchase and expense requisitions"
-    apiPath="/requisitions"
-    openTo="/dashboard/requisitions"
-    createTo="/dashboard/create/requisitions"
-    editTo="/dashboard/requisitions/:id/edit"
-    canEditRow={() => true}
-    canDeleteRow={() => true}
-    actionsIconOnly
-    tabs={[
-      { value: 'my', label: 'My Requisitions' },
-      { value: 'received', label: 'Received' },
-      { value: 'all', label: 'All Requisitions', reviewerOnly: true },
-    ]}
-    filters={[REQ_STATUS, ...DATE_FILTERS]}
-    columns={[
-      { key: 'id', label: 'Requisition #', format: 'id' },
-      { key: 'date', label: 'Date', format: 'date' },
-      { key: 'preparer.names', label: 'Prepared By' },
-      { key: 'department.name', label: 'Department' },
-      { key: 'status', label: 'Status', format: 'status' },
-      { key: 'total_amount_requested', label: 'Total Amount', format: 'money' },
-      { key: 'created_at', label: 'Created At', format: 'datetime' },
-    ]}
-    documentTo="/dashboard/requisitions/:id/document"
-  />
-);
+export const RequisitionsListPage = UnifiedRequisitionsListPage;
 
 export const FinanceRequisitionsListPage = () => (
   <ListPage

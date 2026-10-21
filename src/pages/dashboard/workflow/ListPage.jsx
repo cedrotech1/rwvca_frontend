@@ -45,6 +45,7 @@ export default function ListPage({
   canDeleteRow,
   canEditRow,
   actionsIconOnly = false,
+  hideHeading = false,
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -161,15 +162,29 @@ export default function ListPage({
 
   return (
     <div>
-      <PageHeading
-        icon={<List className="h-6 w-6" />}
-        title={title}
-        subtitle={subtitle}
-        actions={[
-          { label: 'Export', variant: 'secondary', icon: <Download className="h-4 w-4" />, onClick: exportRows, disabled: !items.length },
-          ...(createTo ? [{ label: createLabel || 'Create', variant: 'primary', onClick: () => navigate(createTo) }] : []),
-        ]}
-      />
+      {!hideHeading && (
+        <PageHeading
+          icon={<List className="h-6 w-6" />}
+          title={title}
+          subtitle={subtitle}
+          actions={[
+            { label: 'Export', variant: 'secondary', icon: <Download className="h-4 w-4" />, onClick: exportRows, disabled: !items.length },
+            ...(createTo ? [{ label: createLabel || 'Create', variant: 'primary', onClick: () => navigate(createTo) }] : []),
+          ]}
+        />
+      )}
+      {hideHeading && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+            onClick={exportRows}
+            disabled={!items.length}
+          >
+            <Download className="h-4 w-4" /> Export
+          </button>
+        </div>
+      )}
       <div className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-4">
         {visibleTabs.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4 pb-3">
