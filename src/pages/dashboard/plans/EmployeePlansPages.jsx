@@ -17,7 +17,7 @@ import RichTextEditor from '../../../components/RichTextEditor';
 import { DataTable, StatusBadge, exportCsv, inputClass, labelClass } from '../../../components/ui/dataUi';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
-import { canMonitorPlans, canSeeAllStaffMonitoring } from '../../../utils/rwvcaAccess';
+import { canMonitorPlans, canSeeAllStaffMonitoring, hasPrivilege } from '../../../utils/rwvcaAccess';
 
 const PLAN_STATUSES = ['draft', 'pending', 'ongoing', 'complete', 'postponed'];
 const REPORT_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
