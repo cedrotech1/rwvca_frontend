@@ -146,6 +146,16 @@ export default function MemberFormPage() {
                 <option value="Partial">Bicyacanye (Partial)</option>
               </select>
             </Field>
+            {(form.membership_status === 'Paid' || form.membership_status === 'Partial') && (
+              <>
+                <Field label={`Amount paid (${UMUSANZU_YEAR})`}>
+                  <input type="number" min="0" step="0.01" className={inputClass} value={form.membership_amount_paid} onChange={(e) => set('membership_amount_paid', e.target.value)} placeholder="RWF paid" />
+                </Field>
+                <Field label={`Amount due (${UMUSANZU_YEAR})`}>
+                  <input type="number" min="0" step="0.01" className={inputClass} value={form.membership_amount_due} onChange={(e) => set('membership_amount_due', e.target.value)} placeholder="RWF remaining" />
+                </Field>
+              </>
+            )}
             <Field label="Registration status / Kwiyandikisha">
               <select className={inputClass} value={form.registration_status} onChange={(e) => set('registration_status', e.target.value)}>
                 <option value="Paid">Yishyuye (Paid)</option>
@@ -177,27 +187,70 @@ export default function MemberFormPage() {
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                   <th className="py-2 pr-3">Year</th>
-                  <th className="py-2">Payment status</th>
+                  <th className="py-2 pr-3">Payment status</th>
+                  <th className="py-2 pr-3">Amount paid</th>
+                  <th className="py-2">Amount due</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {years.filter((item) => Number(item.year_value) !== UMUSANZU_YEAR).map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-2 pr-3 font-medium">{item.year_value}</td>
-                    <td className="py-2">
-                      <select
-                        className={inputClass}
-                        value={form.year_payments?.[item.id] || ''}
-                        onChange={(e) => setForm((prev) => ({ ...prev, year_payments: { ...prev.year_payments, [item.id]: e.target.value } }))}
-                      >
-                        <option value="">— Not set —</option>
-                        <option value="Paid">Paid / Yishyuye</option>
-                        <option value="Partial">Partial / Bicyacanye</option>
-                        <option value="Not Paid">Not Paid / Bitishyuye</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {years.filter((item) => Number(item.year_value) !== UMUSANZU_YEAR).map((item) => {
+                  const raw = form.year_payments?.[item.id];
+                  const entry = typeof raw === 'object' && raw
+                    ? raw
+                    : { payment_status: raw || '', amount_paid: '', amount_due: '' };
+                  const status = entry.payment_status || '';
+                  const showAmounts = status === 'Paid' || status === 'Partial';
+                  const setYearPayment = (patch) => setForm((prev) => ({
+                    ...prev,
+                    year_payments: {
+                      ...prev.year_payments,
+                      [item.id]: { ...entry, ...patch },
+                    },
+                  }));
+                  return (
+                    <tr key={item.id}>
+                      <td className="py-2 pr-3 font-medium">{item.year_value}</td>
+                      <td className="py-2 pr-3">
+                        <select
+                          className={inputClass}
+                          value={status}
+                          onChange={(e) => setYearPayment({ payment_status: e.target.value })}
+                        >
+                          <option value="">— Not set —</option>
+                          <option value="Paid">Paid / Yishyuye</option>
+                          <option value="Partial">Partial / Bicyacanye</option>
+                          <option value="Not Paid">Not Paid / Bitishyuye</option>
+                        </select>
+                      </td>
+                      <td className="py-2 pr-3">
+                        {showAmounts ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className={inputClass}
+                            value={entry.amount_paid ?? ''}
+                            onChange={(e) => setYearPayment({ amount_paid: e.target.value })}
+                            placeholder="0"
+                          />
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="py-2">
+                        {showAmounts ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className={inputClass}
+                            value={entry.amount_due ?? ''}
+                            onChange={(e) => setYearPayment({ amount_due: e.target.value })}
+                            placeholder="0"
+                          />
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

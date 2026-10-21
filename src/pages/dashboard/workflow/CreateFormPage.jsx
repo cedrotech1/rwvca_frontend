@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardPen } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichTextEditor from '../../../components/RichTextEditor';
 import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inputClass, labelClass } from '../../../components/ui/dataUi';
@@ -110,7 +111,7 @@ export default function CreateFormPage({
                 : field.optionsKey === 'users'
                   ? options.users.map((item) => ({ value: item.id, label: `${item.names} (${item.role})` }))
                   : []);
-            const span = field.width === 'full' || field.type === 'textarea' || field.type === 'multiselect' ? 'sm:col-span-2' : '';
+            const span = field.width === 'full' || field.type === 'textarea' || field.type === 'richtext' || field.type === 'multiselect' ? 'sm:col-span-2' : '';
             const readonlyValue = field.type === 'readonly-user'
               ? (user?.names || '')
               : field.type === 'readonly-email'
@@ -124,7 +125,13 @@ export default function CreateFormPage({
                 <label className={labelClass}>
                   {field.label}{field.required ? ' *' : ''}
                 </label>
-                {field.type === 'textarea' ? (
+                {field.type === 'richtext' ? (
+                  <RichTextEditor
+                    value={value}
+                    onChange={(html) => setValue(field.name, html)}
+                    placeholder={field.placeholder || 'Start writing…'}
+                  />
+                ) : field.type === 'textarea' ? (
                   <textarea
                     required={field.required}
                     placeholder={field.placeholder}

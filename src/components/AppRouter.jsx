@@ -113,6 +113,18 @@ import MyAnalysisPage from '../pages/dashboard/analysis/MyAnalysisPage';
 import MembershipAnalysisPage from '../pages/dashboard/analysis/MembershipAnalysisPage';
 import MembersAnalysisPage from '../pages/dashboard/analysis/MembersAnalysisPage';
 import RequisitionAnalysisPage from '../pages/dashboard/analysis/RequisitionAnalysisPage';
+import {
+  CreateSupplyRequisitionPage,
+  SupplyRequisitionsListPage,
+  SupplyRequisitionDetailPage,
+} from '../pages/dashboard/supply/SupplyRequisitionsPages';
+import {
+  EmployeePlansPage,
+  EmployeePlanDetailPage,
+  StaffMonitoringPage,
+} from '../pages/dashboard/plans/EmployeePlansPages';
+import LogisticDashboardPage from '../pages/dashboard/logistic/LogisticDashboardPage';
+import MembersDashboardPage from '../pages/dashboard/members/MembersDashboardPage';
 import { isMaintenanceWindow, MaintenanceNotice } from './MaintenanceNotice';
 
 function isMaintenancePath(pathname = '') {
@@ -189,6 +201,7 @@ export const AppRouter = () => (
         <Route path="create/ed-notes" element={<EdNotesCreatePage />} />
         <Route path="create/membership-reports" element={<CreateMembershipReportPage />} />
         <Route path="membership-reports/:id/edit" element={<CreateMembershipReportPage />} />
+        <Route path="create/supply-requisitions" element={<CreateSupplyRequisitionPage />} />
 
         <Route path="requisitions" element={<RequisitionsListPage />} />
         <Route path="requisitions/:id/edit" element={<CreateRequisitionPage />} />
@@ -244,6 +257,13 @@ export const AppRouter = () => (
         <Route path="members/:id/edit" element={<MemberFormPage />} />
         <Route path="members/:id" element={<MemberViewPage />} />
         <Route path="members" element={<MembersListPage />} />
+        <Route path="members-dashboard" element={<MembersDashboardPage />} />
+        <Route path="supply-requisitions" element={<SupplyRequisitionsListPage />} />
+        <Route path="supply-requisitions/:id" element={<SupplyRequisitionDetailPage />} />
+        <Route path="employee-plans" element={<EmployeePlansPage />} />
+        <Route path="employee-plans/:id" element={<EmployeePlanDetailPage />} />
+        <Route path="staff-monitoring" element={<StaffMonitoringPage />} />
+        <Route path="logistic-dashboard" element={<LogisticDashboardPage />} />
         <Route path="permissions" element={<PermissionsListPage />} />
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="procurement" element={<ProcurementPage />} />

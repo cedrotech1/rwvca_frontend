@@ -11,6 +11,14 @@ import { canManageAssets as userCanManageAssets } from '../../utils/rwvcaAccess'
 
 const canManageAssets = (user) => userCanManageAssets(user);
 
+const CONDITION_OPTIONS = [
+  { value: 'good', label: 'Good' },
+  { value: 'in_use', label: 'In use' },
+  { value: 'out_of_service', label: 'Out of service' },
+  { value: 'damaged', label: 'Damaged / needs repair' },
+  { value: 'missing', label: 'Missing' },
+];
+
 const emptyCreateForm = {
   asset_type_id: '',
   name: '',
@@ -19,6 +27,9 @@ const emptyCreateForm = {
   description: '',
   initial_location: 'office',
   condition_notes: '',
+  condition_status: 'good',
+  department_id: '',
+  in_use: 0,
 };
 
 const emptyTypeForm = {
@@ -68,6 +79,7 @@ export default function AssetsPage() {
   const isManager = canManageAssets(user);
   const [assets, setAssets] = useState([]);
   const [assetTypes, setAssetTypes] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -111,6 +123,15 @@ export default function AssetsPage() {
     }
   };
 
+  const loadDepartments = async () => {
+    try {
+      const res = await api.get('/departments', { limit: 200 });
+      setDepartments(res.data?.items || res.data || []);
+    } catch {
+      setDepartments([]);
+    }
+  };
+
   const openDetails = async (assetId) => {
     try {
       const res = await api.get(`/assets/${assetId}`);
@@ -128,6 +149,7 @@ export default function AssetsPage() {
   useEffect(() => {
     loadAssets(filters);
     loadAssetTypes();
+    loadDepartments();
   }, []);
 
   useEffect(() => {
@@ -151,8 +173,10 @@ export default function AssetsPage() {
     { key: 'serial_number', label: 'Serial #', render: (row) => cellValue(row, 'serial_number') },
     { key: 'label_number', label: 'Label #', render: (row) => cellValue(row, 'label_number') },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge value={row.status} /> },
+    { key: 'condition_status', label: 'Condition', render: (row) => <StatusBadge value={row.condition_status || 'good'} /> },
+    { key: 'in_use', label: 'In use', render: (row) => (row.in_use ? 'Yes' : 'No') },
     { key: 'location_assigned', label: 'Location/Assigned', render: (row) => row.location_assigned || '—' },
-    { key: 'user.department.name', label: 'Department', render: (row) => cellValue(row, 'user.department.name') },
+    { key: 'user.department.name', label: 'Department', render: (row) => row.department_name || cellValue(row, 'user.department.name') },
     { key: 'created_at', label: 'Created', render: (row) => formatPhpDate(row.created_at) },
     { key: 'condition_notes', label: 'Condition Notes', render: (row) => cellValue(row, 'condition_notes') },
   ], []);
@@ -161,6 +185,8 @@ export default function AssetsPage() {
     ...asset,
     rownum: index + 1,
     location_assigned: asset.location === 'office' ? 'Office' : (asset.user?.names || '—'),
+    department_name: departments.find((d) => Number(d.id) === Number(asset.department_id))?.name
+      || cellValue(asset, 'user.department.name'),
   }));
 
   const submitCreate = async (event) => {
@@ -312,6 +338,9 @@ export default function AssetsPage() {
       label_number: asset.label_number || '',
       description: asset.description || '',
       condition_notes: asset.condition_notes || '',
+      condition_status: asset.condition_status || 'good',
+      department_id: asset.department_id || '',
+      in_use: asset.in_use ? 1 : 0,
     });
     setActiveModal('edit');
   };
@@ -510,6 +539,26 @@ export default function AssetsPage() {
                   </select>
                 </div>
               )}
+              <div>
+                <label className={labelClass}>Condition</label>
+                <select className={inputClass} value={createForm.condition_status} onChange={(e) => setCreateForm((prev) => ({ ...prev, condition_status: e.target.value }))}>
+                  {CONDITION_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Office / Department</label>
+                <select className={inputClass} value={createForm.department_id} onChange={(e) => setCreateForm((prev) => ({ ...prev, department_id: e.target.value }))}>
+                  <option value="">— Not set —</option>
+                  {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Mark as in use</label>
+                <select className={inputClass} value={createForm.in_use} onChange={(e) => setCreateForm((prev) => ({ ...prev, in_use: Number(e.target.value) }))}>
+                  <option value={0}>No / available</option>
+                  <option value={1}>Yes / in use</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className={labelClass}>Description</label>
@@ -691,6 +740,26 @@ export default function AssetsPage() {
               <div>
                 <label className={labelClass}>Label Number</label>
                 <input className={inputClass} value={editForm.label_number} onChange={(e) => setEditForm((prev) => ({ ...prev, label_number: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelClass}>Condition</label>
+                <select className={inputClass} value={editForm.condition_status || 'good'} onChange={(e) => setEditForm((prev) => ({ ...prev, condition_status: e.target.value }))}>
+                  {CONDITION_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Office / Department</label>
+                <select className={inputClass} value={editForm.department_id || ''} onChange={(e) => setEditForm((prev) => ({ ...prev, department_id: e.target.value }))}>
+                  <option value="">— Not set —</option>
+                  {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Mark as in use</label>
+                <select className={inputClass} value={editForm.in_use ? 1 : 0} onChange={(e) => setEditForm((prev) => ({ ...prev, in_use: Number(e.target.value) }))}>
+                  <option value={0}>No / available</option>
+                  <option value={1}>Yes / in use</option>
+                </select>
               </div>
             </div>
             <div>

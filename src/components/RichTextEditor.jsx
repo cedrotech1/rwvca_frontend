@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -29,6 +29,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing your rep
   const [imageUrl, setImageUrl] = useState('');
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedHighlightColor, setSelectedHighlightColor] = useState('#ffff00');
+  const editorRef = useRef(null);
 
   const editor = useEditor({
     extensions: [
@@ -51,18 +52,71 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing your rep
       }),
     ],
     content: value || '',
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      onChange(html);
+    onCreate: ({ editor: ed }) => {
+      editorRef.current = ed;
+    },
+    onUpdate: ({ editor: ed }) => {
+      const html = ed.getHTML();
+      onChange?.(html);
     },
     editorProps: {
       attributes: {
         class: 'rich-text-editor mx-auto focus:outline-none min-h-[300px] p-4 prose prose-sm max-w-none',
+        'data-placeholder': placeholder,
       },
       transformPastedHTML: (html) => sanitizeHtml(html),
       transformPastedText: (text) => stripClipboardArtifacts(text),
+      handlePaste: (view, event) => {
+        const clipboard = event.clipboardData;
+        if (!clipboard) return false;
+        const html = clipboard.getData('text/html');
+        const text = clipboard.getData('text/plain');
+        if (!html && !text) return false;
+
+        event.preventDefault();
+        const ed = editorRef.current;
+
+        if (html) {
+          const cleaned = sanitizeHtml(html);
+          if (!cleaned) return true;
+          if (typeof view.pasteHTML === 'function') {
+            view.pasteHTML(cleaned);
+            return true;
+          }
+          if (ed) {
+            ed.chain().focus().insertContent(cleaned).run();
+            return true;
+          }
+          return true;
+        }
+
+        const cleanedText = stripClipboardArtifacts(text || '');
+        if (ed) {
+          ed.chain().focus().insertContent(cleanedText).run();
+        } else if (typeof view.pasteHTML === 'function') {
+          view.pasteHTML(`<p>${cleanedText.replace(/</g, '&lt;')}</p>`);
+        }
+        return true;
+      },
     },
   });
+
+  useEffect(() => {
+    if (editor) editorRef.current = editor;
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor || value === undefined) return;
+    const current = editor.getHTML();
+    const next = value || '';
+    const normalize = (html) => {
+      const trimmed = String(html || '').trim();
+      if (!trimmed || trimmed === '<p></p>' || trimmed === '<p><br></p>') return '';
+      return trimmed;
+    };
+    if (normalize(current) === normalize(next) || current === next) return;
+    editor.commands.setContent(next, false);
+  }, [editor, value]);
 
   if (!editor) {
     return <div className="animate-pulse bg-gray-100 rounded-lg h-64"></div>;

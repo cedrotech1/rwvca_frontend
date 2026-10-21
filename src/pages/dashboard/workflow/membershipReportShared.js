@@ -34,14 +34,29 @@ export function round2(value) {
   return Math.round(num(value) * 100) / 100;
 }
 
+function rowHasVat(row) {
+  if (row.has_vat === 0 || row.has_vat === false || row.has_vat === '0') return false;
+  if (String(row.category || '').toUpperCase() === 'WITHOUT_VAT') return false;
+  return true;
+}
+
 export function calcNormal(row) {
   const quantity = num(row.number_of_timber);
   const price = num(row.price);
   const type = TIMBER_TYPES.find((item) => item.name === row.timber_name);
   const total_cost = round2(quantity * price);
-  const vat = round2(total_cost * VAT_RATE);
+  const vat = rowHasVat(row) ? round2(total_cost * VAT_RATE) : 0;
   const msf = round2(quantity * (type?.msf || 0));
-  return { ...row, total_cost, vat, msf, mst: 0, vat_and_msf: round2(vat + msf), vat_and_mst: 0 };
+  return {
+    ...row,
+    has_vat: rowHasVat(row) ? 1 : 0,
+    total_cost,
+    vat,
+    msf,
+    mst: 0,
+    vat_and_msf: round2(vat + msf),
+    vat_and_mst: 0,
+  };
 }
 
 export function calcOther(row) {
@@ -49,9 +64,23 @@ export function calcOther(row) {
   const price = num(row.price);
   const msfInput = num(row.msf);
   const total_cost = round2(quantity * price);
-  const vat = round2(total_cost * VAT_RATE);
+  const vat = rowHasVat(row) ? round2(total_cost * VAT_RATE) : 0;
   const mst = round2(quantity * msfInput);
-  return { ...row, total_cost, vat, msf: msfInput, mst, vat_and_msf: 0, vat_and_mst: round2(vat + mst) };
+  return {
+    ...row,
+    has_vat: rowHasVat(row) ? 1 : 0,
+    total_cost,
+    vat,
+    msf: msfInput,
+    mst,
+    vat_and_msf: 0,
+    vat_and_mst: round2(vat + mst),
+  };
+}
+
+/** Field-office / non-VAT lines: still count cost & timber, VAT stays 0. */
+export function calcWithoutVat(row) {
+  return calcOther({ ...row, has_vat: 0, category: 'OTHER' });
 }
 
 export function sum(rows, key) {

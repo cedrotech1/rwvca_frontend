@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FilePlus, Pencil, Plus } from 'lucide-react';
 import { PageHeading } from '../../../components/PageHeading';
+import RichTextEditor from '../../../components/RichTextEditor';
 import api from '../../../services/api';
 import { inputClass, labelClass, money, SheetTable } from '../../../components/ui/dataUi';
 import {
@@ -10,10 +11,14 @@ import {
 } from './membershipReportShared';
 
 function emptyNormal() {
-  return { timber_name: 'PINUS', number_of_timber: '', price: '', category: 'NORMAL' };
+  return { timber_name: 'PINUS', number_of_timber: '', price: '', category: 'NORMAL', has_vat: 1 };
 }
-function emptyOther() {
-  return { timber_name: '', number_of_timber: '', price: '', msf: 0, category: 'OTHER' };
+function emptyOther(hasVat = true) {
+  return { timber_name: '', number_of_timber: '', price: '', msf: 0, category: 'OTHER', has_vat: hasVat ? 1 : 0 };
+}
+
+function patchOther(setOther, sourceIndex, patch) {
+  setOther((prev) => prev.map((item, i) => (i === sourceIndex ? { ...item, ...patch } : item)));
 }
 function emptyCustomer() {
   return { date: '', name: '', phone: '', amount: '' };
@@ -44,7 +49,7 @@ export default function CreateMembershipReportPage() {
 
   const [form, setForm] = useState(defaultForm);
   const [normal, setNormal] = useState([emptyNormal()]);
-  const [other, setOther] = useState([emptyOther()]);
+  const [other, setOther] = useState([emptyOther(true), emptyOther(false)]);
   const [customers, setCustomers] = useState([emptyCustomer()]);
   const [payments, setPayments] = useState(Object.fromEntries(PAYMENT_FIELDS.map((item) => [item.method, ''])));
   const [error, setError] = useState('');
@@ -54,7 +59,10 @@ export default function CreateMembershipReportPage() {
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
   const period = periodFromType(form);
   const normalCalc = normal.map(calcNormal);
-  const otherCalc = other.map(calcOther);
+  const otherIndexed = other.map((row, sourceIndex) => ({ ...calcOther(row), sourceIndex }));
+  const otherWithVat = otherIndexed.filter((row) => Number(row.has_vat) !== 0);
+  const otherWithoutVat = otherIndexed.filter((row) => Number(row.has_vat) === 0);
+  const otherCalc = otherIndexed;
 
   useEffect(() => {
     if (!isEdit) return undefined;
@@ -99,9 +107,10 @@ export default function CreateMembershipReportPage() {
             price: row.price ?? '',
             msf: row.msf ?? 0,
             category: 'OTHER',
+            has_vat: row.has_vat === 0 || row.has_vat === false || row.has_vat === '0' ? 0 : 1,
           }));
         setNormal(normalItems.length ? normalItems : [emptyNormal()]);
-        setOther(otherItems.length ? otherItems : [emptyOther()]);
+        setOther(otherItems.length ? otherItems : [emptyOther(true), emptyOther(false)]);
         const paymentMap = Object.fromEntries(PAYMENT_FIELDS.map((item) => [item.method, '']));
         (report.payments || []).forEach((row) => {
           const method = String(row.method || '').toUpperCase();
@@ -132,7 +141,8 @@ export default function CreateMembershipReportPage() {
     setSaving(true);
     setError('');
     try {
-      if (!form.comment.trim()) throw new Error('Comment / Remarks is required');
+      const commentText = String(form.comment || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+      if (!commentText) throw new Error('Comment / Remarks is required');
       if (!form.location) throw new Error('District is required');
       if (!form.title.trim()) throw new Error('Report title is required');
       if (!period.start_date || !period.end_date) throw new Error('Please complete the report period');
@@ -205,7 +215,11 @@ export default function CreateMembershipReportPage() {
             </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>Comment / Remarks *</label>
-              <textarea required className={`${inputClass} min-h-28`} value={form.comment} onChange={(e) => setField('comment', e.target.value)} placeholder="Please provide a detailed comment or remarks about this report." />
+              <RichTextEditor
+                value={form.comment}
+                onChange={(html) => setField('comment', html)}
+                placeholder="Detailed comment or remarks about this report…"
+              />
             </div>
             {form.report_type === 'DAILY' && (
               <div>
@@ -296,27 +310,55 @@ export default function CreateMembershipReportPage() {
         />
 
         <TimberEditor
-          title="OTHER TIMBER FOR DIFFERENCE PRICE"
-          columns={['NAME OF TIMBER', 'No OF TIMBER', 'PRICE OF TIMBER', 'MSF', 'TOTAL COST', 'VAT', 'MST', 'TVA+MST']}
-          rows={otherCalc}
-          onAdd={() => setOther((prev) => [...prev, emptyOther()])}
-          onReset={() => setOther([emptyOther()])}
-          renderRow={(row, index) => (
-            <>
-              <td className="px-2 py-2"><input className={inputClass} placeholder="Timber name" value={other[index].timber_name} onChange={(e) => setOther((prev) => prev.map((item, i) => (i === index ? { ...item, timber_name: e.target.value } : item)))} /></td>
-              <td className="px-2 py-2"><input type="number" min="0" className={inputClass} value={other[index].number_of_timber} onChange={(e) => setOther((prev) => prev.map((item, i) => (i === index ? { ...item, number_of_timber: e.target.value } : item)))} /></td>
-              <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={other[index].price} onChange={(e) => setOther((prev) => prev.map((item, i) => (i === index ? { ...item, price: e.target.value } : item)))} /></td>
-              <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={other[index].msf} onChange={(e) => setOther((prev) => prev.map((item, i) => (i === index ? { ...item, msf: e.target.value } : item)))} /></td>
-              <td className="px-2 py-2 text-right tabular-nums">{money(row.total_cost)}</td>
-              <td className="px-2 py-2 text-right tabular-nums">{money(row.vat)}</td>
-              <td className="px-2 py-2 text-right tabular-nums">{money(row.mst)}</td>
-              <td className="px-2 py-2 text-right tabular-nums">{money(row.vat_and_mst)}</td>
-            </>
-          )}
+          title="OTHER TIMBER FOR DIFFERENCE PRICE (with VAT)"
+          columns={['NAME OF TIMBER', 'No OF TIMBER', 'PRICE', 'MSF', 'TOTAL COST', 'VAT', 'MST', 'TVA+MST']}
+          rows={otherWithVat}
+          onAdd={() => setOther((prev) => [...prev, emptyOther(true)])}
+          onReset={() => setOther((prev) => [...prev.filter((r) => Number(r.has_vat) === 0), emptyOther(true)])}
+          renderRow={(row) => {
+            const idx = row.sourceIndex;
+            const raw = other[idx] || emptyOther(true);
+            return (
+              <>
+                <td className="px-2 py-2"><input className={inputClass} placeholder="Timber name" value={raw.timber_name} onChange={(e) => patchOther(setOther, idx, { timber_name: e.target.value, has_vat: 1 })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" className={inputClass} value={raw.number_of_timber} onChange={(e) => patchOther(setOther, idx, { number_of_timber: e.target.value })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={raw.price} onChange={(e) => patchOther(setOther, idx, { price: e.target.value })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={raw.msf} onChange={(e) => patchOther(setOther, idx, { msf: e.target.value })} /></td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.total_cost)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.vat)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.mst)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.vat_and_mst)}</td>
+              </>
+            );
+          }}
+        />
+
+        <TimberEditor
+          title="FIELD OFFICE / WITHOUT VAT (still counted in totals)"
+          columns={['NAME OF ITEM', 'No', 'PRICE', 'MSF/MST rate', 'TOTAL COST', 'VAT', 'MST', 'COST+MST']}
+          rows={otherWithoutVat}
+          onAdd={() => setOther((prev) => [...prev, emptyOther(false)])}
+          onReset={() => setOther((prev) => [...prev.filter((r) => Number(r.has_vat) !== 0), emptyOther(false)])}
+          renderRow={(row) => {
+            const idx = row.sourceIndex;
+            const raw = other[idx] || emptyOther(false);
+            return (
+              <>
+                <td className="px-2 py-2"><input className={inputClass} placeholder="Item / timber name" value={raw.timber_name} onChange={(e) => patchOther(setOther, idx, { timber_name: e.target.value, has_vat: 0 })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" className={inputClass} value={raw.number_of_timber} onChange={(e) => patchOther(setOther, idx, { number_of_timber: e.target.value })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={raw.price} onChange={(e) => patchOther(setOther, idx, { price: e.target.value })} /></td>
+                <td className="px-2 py-2"><input type="number" min="0" step="0.01" className={inputClass} value={raw.msf} onChange={(e) => patchOther(setOther, idx, { msf: e.target.value })} /></td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.total_cost)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-gray-400">{money(0)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.mst)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{money(row.vat_and_mst)}</td>
+              </>
+            );
+          }}
         />
 
         <SheetTable
-          title="GRAND TOTAL (NORMAL + OTHER)"
+          title="GRAND TOTAL (NORMAL + OTHER + WITHOUT VAT)"
           columns={[
             { key: 'name', label: 'NAME OF TIMBER' },
             { key: 'qty', label: 'No OF TIMBER', align: 'right' },
@@ -328,7 +370,7 @@ export default function CreateMembershipReportPage() {
           ]}
           rows={[{
             total: true,
-            name: 'GRAND TOTAL (NORMAL + OTHER)',
+            name: 'GRAND TOTAL (incl. field office without VAT)',
             qty: money(sum(normalCalc, 'number_of_timber') + sum(otherCalc, 'number_of_timber')),
             price: '—',
             cost: money(sum(normalCalc, 'total_cost') + sum(otherCalc, 'total_cost')),

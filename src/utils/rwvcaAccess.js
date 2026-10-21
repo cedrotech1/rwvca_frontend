@@ -12,6 +12,7 @@ const CREATE_ITEMS = [
   { id: 'create-document', label: 'Document', path: '/dashboard/create/documents', privilege: 'menu.create.document' },
   { id: 'create-report', label: 'Report', path: '/dashboard/create/reports', privilege: 'menu.create.report' },
   { id: 'create-membership-report', label: 'Membership Report', path: '/dashboard/create/membership-reports', privilege: 'menu.create.membership_report' },
+  { id: 'create-supply-requisition', label: 'Supply Requisition', path: '/dashboard/create/supply-requisitions', privilege: 'menu.create.supply_requisition' },
 ];
 
 const VIEW_ITEMS = [
@@ -24,6 +25,7 @@ const VIEW_ITEMS = [
   { id: 'view-documents', label: 'Documents', path: '/dashboard/documents', privilege: 'menu.view.documents' },
   { id: 'view-reports', label: 'Reports', path: '/dashboard/reports', privilege: 'menu.view.reports' },
   { id: 'view-membership-reports', label: 'Membership Reports', path: '/dashboard/membership-reports', privilege: 'menu.view.membership_reports' },
+  { id: 'view-supply-requisitions', label: 'Supply Requisitions', path: '/dashboard/supply-requisitions', privilege: 'menu.view.supply_requisitions' },
 ];
 
 const GENERAL_ITEMS = [
@@ -31,6 +33,7 @@ const GENERAL_ITEMS = [
   { id: 'todos', label: 'Todos', path: '/dashboard/todos', privilege: 'menu.todos' },
   { id: 'communications', label: 'Communications', path: '/dashboard/communications', privilege: 'menu.communications' },
   { id: 'assets', label: 'Assets', path: '/dashboard/assets', privilege: 'menu.assets' },
+  { id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans', privilege: 'menu.employee_plans' },
   { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', privilege: 'menu.notifications' },
   { id: 'account', label: 'Account', path: '/dashboard/profile', privilege: 'menu.account' },
   { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance', privilege: 'menu.attendance' },
@@ -58,6 +61,7 @@ const ANALYSIS_ITEMS = [
   { id: 'requisition-analysis', label: 'Requisition Analysis', path: '/dashboard/requisition-analysis', privilege: 'menu.analysis.requisition' },
   { id: 'membership-analysis', label: 'Membership Analysis', path: '/dashboard/membership-analysis', privilege: 'menu.analysis.membership' },
   { id: 'members-analysis', label: 'Members Analysis', path: '/dashboard/members-analysis', privilege: 'menu.analysis.members' },
+  { id: 'staff-monitoring', label: 'Staff Monitoring', path: '/dashboard/staff-monitoring', privilege: 'menu.staff_monitoring' },
 ];
 
 const TOP_LINKS = [
@@ -67,7 +71,9 @@ const TOP_LINKS = [
   { id: 'manage-users', label: 'User Management', path: '/dashboard/users', privilege: 'menu.users' },
   { id: 'logs-page', label: 'Logs Page', path: '/dashboard/logs', privilege: 'menu.logs' },
   { id: 'members', label: 'Members', path: '/dashboard/members', privilege: 'menu.members' },
+  { id: 'members-dashboard', label: 'Members Dashboard', path: '/dashboard/members-dashboard', privilege: 'menu.members_dashboard' },
   { id: 'inventory', label: 'Inventory', path: '/dashboard/inventory', privilege: 'menu.inventory' },
+  { id: 'logistic-dashboard', label: 'Logistic Dashboard', path: '/dashboard/logistic-dashboard', privilege: 'menu.logistic_dashboard' },
   { id: 'procurement', label: 'Procurement', path: '/dashboard/procurement', privilege: 'menu.procurement' },
   { id: 'permissions', label: 'Permissions', path: '/dashboard/permissions', privilege: 'menu.permissions' },
   { id: 'subscribers', label: 'Subscriptions', path: '/dashboard/subscribers', privilege: 'menu.subscribers' },
@@ -175,8 +181,25 @@ export function getMenuForRole(role, user = null) {
   if (privs.has('menu.inventory') && !menu.some((m) => m.id === 'inventory')) {
     menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'inventory')));
   }
+  if (privs.has('menu.logistic_dashboard') && !menu.some((m) => m.id === 'logistic-dashboard')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'logistic-dashboard')));
+  }
   if (privs.has('menu.procurement') && !menu.some((m) => m.id === 'procurement')) {
     menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'procurement')));
+  }
+  if (privs.has('menu.members_dashboard') && !menu.some((m) => m.id === 'members-dashboard')) {
+    menu.push(stripPrivilegeMeta(TOP_LINKS.find((l) => l.id === 'members-dashboard')));
+  }
+  // Supply list also reachable via menu.supply_requisitions when view privilege is absent
+  if (
+    privs.has('menu.supply_requisitions')
+    && !menu.some((m) => m.id === 'view-supply-requisitions' || m.id === 'supply-requisitions')
+    && !viewChildren.some((m) => m.id === 'view-supply-requisitions')
+  ) {
+    const viewGroup = menu.find((m) => m.id === 'view');
+    const supplyItem = { id: 'view-supply-requisitions', label: 'Supply Requisitions', path: '/dashboard/supply-requisitions' };
+    if (viewGroup) viewGroup.children = [...(viewGroup.children || []), supplyItem];
+    else menu.push({ id: 'view', label: 'View', children: [supplyItem] });
   }
 
   const adminChildren = filterByPrivilege(ADMIN_SYSTEM_ITEMS, privs).map(stripPrivilegeMeta);
@@ -303,6 +326,30 @@ export function canManageAssets(user) {
 
 export function canManageInventory(user) {
   return hasPrivilege(user, 'inventory.manage');
+}
+
+export function canManageSupply(user) {
+  return hasPrivilege(user, 'supply.manage');
+}
+
+export function canAuthorizeSupply(user) {
+  return hasPrivilege(user, 'supply.authorize');
+}
+
+export function canMonitorPlans(user) {
+  return hasPrivilege(user, 'plans.monitor') || hasPrivilege(user, 'menu.staff_monitoring');
+}
+
+export function canManagePlans(user) {
+  return hasPrivilege(user, 'plans.manage') || hasPrivilege(user, 'menu.employee_plans');
+}
+
+export function canAccessLogisticDashboard(user) {
+  return hasPrivilege(user, 'logistic.dashboard') || hasPrivilege(user, 'menu.logistic_dashboard');
+}
+
+export function canAccessMembersDashboard(user) {
+  return hasPrivilege(user, 'members.dashboard') || hasPrivilege(user, 'menu.members_dashboard');
 }
 
 export function canAccessPath(role, pathname, user = null) {

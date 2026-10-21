@@ -22,6 +22,11 @@ const NEW_SYSTEM_MODULES = [
   'ed-full-access',
   'finance-requisitions',
   'create',
+  'supply-requisitions',
+  'employee-plans',
+  'staff-monitoring',
+  'logistic-dashboard',
+  'members-dashboard',
 ];
 
 const PHP_PAGE_ROUTES = {

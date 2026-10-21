@@ -101,6 +101,8 @@ export default function MembershipReportDetailPage() {
   const items = item.items || [];
   const normalItems = items.filter((row) => String(row.category).toUpperCase() === 'NORMAL');
   const otherItems = items.filter((row) => String(row.category).toUpperCase() === 'OTHER');
+  const otherWithVat = otherItems.filter((row) => !(row.has_vat === 0 || row.has_vat === false || row.has_vat === '0'));
+  const otherWithoutVat = otherItems.filter((row) => row.has_vat === 0 || row.has_vat === false || row.has_vat === '0');
   const storedPayments = item.payments || [];
   const payments = PAYMENT_FIELDS.map((field) => {
     const found = storedPayments.find((row) => String(row.method).toUpperCase() === field.method);
@@ -179,7 +181,7 @@ export default function MembershipReportDetailPage() {
                 <span>{formatPhpDateTime(item.created_at)}</span>
                 <span className="bg-gray-500 text-white px-2 py-0.5 rounded-full">Creator's Remark</span>
               </div>
-              <p className="text-sm text-gray-800 whitespace-pre-wrap">{item.comment}</p>
+              <div className="prose prose-sm max-w-none text-sm text-gray-800" dangerouslySetInnerHTML={{ __html: item.comment }} />
             </div>
           </div>
         )}
@@ -344,13 +346,13 @@ export default function MembershipReportDetailPage() {
       />
 
       <SheetTable
-        title="OTHER TIMBER FOR DIFFERENCE PRICE"
+        title="OTHER TIMBER FOR DIFFERENCE PRICE (with VAT)"
         exportName={`other-timber-${id}`}
         empty="No other timber items found"
         columns={[
           { key: 'timber_name', label: 'NAME OF TIMBER' },
           { key: 'number_of_timber', label: 'No OF TIMBER', align: 'right', render: (row) => money(row.number_of_timber) },
-          { key: 'price', label: 'PRICE OF TIMBER', align: 'right', render: (row) => (row.total ? money(row.price) : money(row.price)) },
+          { key: 'price', label: 'PRICE OF TIMBER', align: 'right', render: (row) => money(row.price) },
           { key: 'msf', label: 'MSF', align: 'right', render: (row) => money(row.msf) },
           { key: 'total_cost', label: 'TOTAL COST', align: 'right', render: (row) => money(row.total_cost) },
           { key: 'vat', label: 'VAT (18%)', align: 'right', render: (row) => money(row.vat) },
@@ -358,24 +360,54 @@ export default function MembershipReportDetailPage() {
           { key: 'vat_and_mst', label: 'TVA+MST', align: 'right', render: (row) => money(row.vat_and_mst) },
         ]}
         rows={[
-          ...otherItems,
-          ...(otherItems.length ? [{
+          ...otherWithVat,
+          ...(otherWithVat.length ? [{
             total: true,
-            timber_name: 'GRAND TOTAL (Other)',
-            number_of_timber: sum(otherItems, 'number_of_timber'),
-            price: sum(otherItems, 'price'),
-            msf: sum(otherItems, 'msf'),
-            total_cost: sum(otherItems, 'total_cost'),
-            vat: sum(otherItems, 'vat'),
-            mst: sum(otherItems, 'mst'),
-            vat_and_mst: sum(otherItems, 'vat_and_mst'),
+            timber_name: 'GRAND TOTAL (Other with VAT)',
+            number_of_timber: sum(otherWithVat, 'number_of_timber'),
+            price: sum(otherWithVat, 'price'),
+            msf: sum(otherWithVat, 'msf'),
+            total_cost: sum(otherWithVat, 'total_cost'),
+            vat: sum(otherWithVat, 'vat'),
+            mst: sum(otherWithVat, 'mst'),
+            vat_and_mst: sum(otherWithVat, 'vat_and_mst'),
+          }] : []),
+        ]}
+      />
+
+      <SheetTable
+        title="FIELD OFFICE / WITHOUT VAT"
+        exportName={`without-vat-${id}`}
+        empty="No field-office / without-VAT items"
+        columns={[
+          { key: 'timber_name', label: 'NAME OF ITEM' },
+          { key: 'number_of_timber', label: 'No', align: 'right', render: (row) => money(row.number_of_timber) },
+          { key: 'price', label: 'PRICE', align: 'right', render: (row) => money(row.price) },
+          { key: 'msf', label: 'MSF/MST rate', align: 'right', render: (row) => money(row.msf) },
+          { key: 'total_cost', label: 'TOTAL COST', align: 'right', render: (row) => money(row.total_cost) },
+          { key: 'vat', label: 'VAT', align: 'right', render: () => money(0) },
+          { key: 'mst', label: 'MST', align: 'right', render: (row) => money(row.mst) },
+          { key: 'vat_and_mst', label: 'COST+MST', align: 'right', render: (row) => money(row.vat_and_mst) },
+        ]}
+        rows={[
+          ...otherWithoutVat,
+          ...(otherWithoutVat.length ? [{
+            total: true,
+            timber_name: 'GRAND TOTAL (Without VAT)',
+            number_of_timber: sum(otherWithoutVat, 'number_of_timber'),
+            price: sum(otherWithoutVat, 'price'),
+            msf: sum(otherWithoutVat, 'msf'),
+            total_cost: sum(otherWithoutVat, 'total_cost'),
+            vat: 0,
+            mst: sum(otherWithoutVat, 'mst'),
+            vat_and_mst: sum(otherWithoutVat, 'vat_and_mst'),
           }] : []),
         ]}
       />
 
       {(normalItems.length || otherItems.length) ? (
         <SheetTable
-          title="COMBINED GRAND TOTALS (All Timber)"
+          title="COMBINED GRAND TOTALS (All Timber incl. without VAT)"
           tone="red"
           exportName={`combined-totals-${id}`}
           columns={[
@@ -388,7 +420,8 @@ export default function MembershipReportDetailPage() {
           ]}
           rows={[
             { description: 'Normal Timber', qty: money(sum(normalItems, 'number_of_timber')), cost: money(sum(normalItems, 'total_cost')), vat: money(sum(normalItems, 'vat')), msf: money(sum(normalItems, 'msf')), vatmsf: money(sum(normalItems, 'vat_and_msf')) },
-            { description: 'Other Timber', qty: money(sum(otherItems, 'number_of_timber')), cost: money(sum(otherItems, 'total_cost')), vat: money(sum(otherItems, 'vat')), msf: money(sum(otherItems, 'msf') + sum(otherItems, 'mst')), vatmsf: money(sum(otherItems, 'vat_and_mst')) },
+            { description: 'Other Timber (VAT)', qty: money(sum(otherWithVat, 'number_of_timber')), cost: money(sum(otherWithVat, 'total_cost')), vat: money(sum(otherWithVat, 'vat')), msf: money(sum(otherWithVat, 'mst')), vatmsf: money(sum(otherWithVat, 'vat_and_mst')) },
+            { description: 'Field office (no VAT)', qty: money(sum(otherWithoutVat, 'number_of_timber')), cost: money(sum(otherWithoutVat, 'total_cost')), vat: money(0), msf: money(sum(otherWithoutVat, 'mst')), vatmsf: money(sum(otherWithoutVat, 'vat_and_mst')) },
             { total: true, description: 'COMBINED GRAND TOTAL', qty: money(sum(items, 'number_of_timber')), cost: money(sum(items, 'total_cost')), vat: money(sum(items, 'vat')), msf: money(sum(normalItems, 'msf') + sum(otherItems, 'mst')), vatmsf: money(sum(normalItems, 'vat_and_msf') + sum(otherItems, 'vat_and_mst')) },
           ]}
         />

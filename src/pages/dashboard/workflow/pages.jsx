@@ -40,7 +40,7 @@ export const CreateMissionPage = () => (
     fields={[
       { name: 'employee', label: 'Employee Name', type: 'readonly-user' },
       { name: 'email', label: 'Email', type: 'readonly-email' },
-      { name: 'purpose', label: 'Purpose of travel', type: 'textarea', required: true, placeholder: 'Objectives, expected outcomes, activities...', width: 'full' },
+      { name: 'purpose', label: 'Purpose of travel', type: 'richtext', required: true, placeholder: 'Objectives, expected outcomes, activities...', width: 'full' },
       { name: 'destination', label: 'Destination', required: true },
       { name: 'departure_date', label: 'Travel period (from)', type: 'date', required: true },
       { name: 'return_date', label: 'Travel period (to)', type: 'date', required: true },
@@ -69,7 +69,7 @@ export const CreateVehiclePage = () => (
         { value: 'Other', label: 'Other' },
       ] },
       { name: 'type_other', label: 'Please specify', required: true, showIf: { name: 'type', value: 'Other' }, width: 'full' },
-      { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'Describe the vehicle utilization request here...', width: 'full' },
+      { name: 'description', label: 'Description', type: 'richtext', required: true, placeholder: 'Describe the vehicle utilization request here...', width: 'full' },
       { name: 'date', label: 'Date', type: 'date', required: true, default: new Date().toISOString().slice(0, 10) },
       { name: 'start_time', label: 'Start Time', type: 'datetime-local' },
       { name: 'end_time', label: 'End Time', type: 'datetime-local' },
@@ -104,7 +104,7 @@ export const CreateCommunicationPage = () => (
     notifyTitle="Notify recipients as"
     fields={[
       { name: 'title', label: 'Title', required: true, placeholder: 'Enter a clear title...', width: 'full' },
-      { name: 'description', label: 'Description / Message', type: 'textarea', required: true, width: 'full', hint: 'PHP used rich text here. This version keeps a normal editor but preserves line breaks.' },
+      { name: 'description', label: 'Description / Message', type: 'richtext', required: true, width: 'full' },
       { name: 'attachment', label: 'Attachment (Optional)', type: 'file' },
       { name: 'users', label: 'Select Recipients', type: 'multiselect', optionsKey: 'users', required: true, width: 'full' },
     ]}

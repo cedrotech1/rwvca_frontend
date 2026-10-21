@@ -121,7 +121,11 @@ export function DataTable({ columns, rows, empty = 'No records', renderActions, 
               <tr key={row.id || row.product_id || index} className={typeof rowClassName === 'function' ? rowClassName(row) : (rowClassName || 'hover:bg-gray-50')}>
                 {columns.map((col) => (
                   <td key={col.key || col.label} className="px-3 py-3">
-                    {typeof col.render === 'function' ? col.render(row, index) : row[col.key]}
+                    {typeof col.render === 'function'
+                      ? col.render(row, index)
+                      : typeof col.value === 'function'
+                        ? col.value(row, index)
+                        : row[col.key]}
                   </td>
                 ))}
                 {renderActions && <td className="px-3 py-3 text-right whitespace-nowrap">{renderActions(row)}</td>}

@@ -36,6 +36,8 @@ export const emptyMember = () => ({
   employees_women: 0,
   employees_men: 0,
   employees_pwd: 0,
+  membership_amount_paid: '',
+  membership_amount_due: '',
   year_payments: {},
   land_size: '',
   seed_type: '',
@@ -58,7 +60,17 @@ export function memberFromApi(row) {
   });
   const payments = {};
   (row.member_year_payments_member_id || []).forEach((item) => {
-    payments[item.year_id] = item.payment_status;
+    const yearValue = Number(item.year?.year_value || item.year_value || 0);
+    const entry = {
+      payment_status: item.payment_status || '',
+      amount_paid: item.amount_paid ?? '',
+      amount_due: item.amount_due ?? '',
+    };
+    payments[item.year_id] = entry;
+    if (yearValue === UMUSANZU_YEAR) {
+      form.membership_amount_paid = entry.amount_paid === 0 || entry.amount_paid ? String(entry.amount_paid ?? '') : '';
+      form.membership_amount_due = entry.amount_due === 0 || entry.amount_due ? String(entry.amount_due ?? '') : '';
+    }
   });
   form.year_payments = payments;
   const nursery = row.nursery_details_member_id?.[0] || {};
@@ -96,6 +108,7 @@ export function MemberNav() {
     { to: '/dashboard/members/new', label: 'Add member' },
     { to: '/dashboard/members', label: 'Member list' },
     { to: '/dashboard/members/statistics', label: 'Membership statistics' },
+    { to: '/dashboard/members-dashboard', label: 'Members dashboard' },
   ];
   return (
     <div className="flex flex-wrap gap-2">
