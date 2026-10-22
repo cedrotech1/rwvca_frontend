@@ -31,8 +31,6 @@ const GENERAL_ITEMS = [
   { id: 'todos', label: 'Todos', path: '/dashboard/todos', privilege: 'menu.todos' },
   { id: 'communications', label: 'Communications', path: '/dashboard/communications', privilege: 'menu.communications' },
   { id: 'assets', label: 'Assets', path: '/dashboard/assets', privilege: 'menu.assets' },
-  { id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans', privilege: 'menu.employee_plans' },
-  { id: 'staff-monitoring', label: 'My plans monitoring', path: '/dashboard/staff-monitoring' },
   { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', privilege: 'menu.notifications' },
   { id: 'account', label: 'Account', path: '/dashboard/profile', privilege: 'menu.account' },
   { id: 'attendance', label: 'Attendance', path: '/dashboard/attendance', privilege: 'menu.attendance' },
@@ -132,6 +130,7 @@ export function getMenuForRole(role, user = null) {
   if (!privs) {
     return [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+      { id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans' },
       { id: 'staff-monitoring', label: 'My plans monitoring', path: '/dashboard/staff-monitoring' },
       { id: 'account', label: 'Account', path: '/dashboard/profile' },
     ];
@@ -140,6 +139,17 @@ export function getMenuForRole(role, user = null) {
   const menu = [];
   const dash = TOP_LINKS.find((l) => l.id === 'dashboard');
   if (privs.has(dash.privilege)) menu.push(stripPrivilegeMeta(dash));
+
+  const seeAllPlanMonitoring = privs.has('plans.monitor') || privs.has('menu.staff_monitoring');
+  // Top-level (not under General / Analysis)
+  if (privs.has('menu.employee_plans') || privs.has('plans.manage')) {
+    menu.push({ id: 'employee-plans', label: 'Employee Plans', path: '/dashboard/employee-plans' });
+  }
+  menu.push({
+    id: 'staff-monitoring',
+    label: seeAllPlanMonitoring ? 'Employee plan monitoring' : 'My plans monitoring',
+    path: '/dashboard/staff-monitoring',
+  });
 
   const analysisChildren = filterByPrivilege(ANALYSIS_ITEMS, privs).map(stripPrivilegeMeta);
   if (analysisChildren.length) {
@@ -174,17 +184,7 @@ export function getMenuForRole(role, user = null) {
   const viewChildren = filterByPrivilege(VIEW_ITEMS, privs).map(stripPrivilegeMeta);
   if (viewChildren.length) menu.push({ id: 'view', label: 'View', children: viewChildren });
 
-  const seeAllPlanMonitoring = privs.has('plans.monitor') || privs.has('menu.staff_monitoring');
-  const generalChildren = filterByPrivilege(GENERAL_ITEMS, privs).map((item) => {
-    const cleaned = stripPrivilegeMeta(item);
-    if (cleaned.id === 'staff-monitoring') {
-      return {
-        ...cleaned,
-        label: seeAllPlanMonitoring ? 'Employee plan monitoring' : 'My plans monitoring',
-      };
-    }
-    return cleaned;
-  });
+  const generalChildren = filterByPrivilege(GENERAL_ITEMS, privs).map(stripPrivilegeMeta);
   if (generalChildren.length) menu.push({ id: 'general', label: 'General', children: generalChildren });
 
   if (privs.has('menu.inventory') && !menu.some((m) => m.id === 'inventory')) {
