@@ -37,6 +37,9 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing your rep
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
+        // TipTap StarterKit may ship link/underline — disable to avoid duplicate names
+        link: false,
+        underline: false,
       }),
       Underline,
       Link.configure({

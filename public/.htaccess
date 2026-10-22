@@ -1,8 +1,10 @@
 RewriteEngine On
 
-# Send /api to the backend on this server before the React app can catch it.
-RewriteRule ^api(/|$) http://127.0.0.1:3000%{REQUEST_URI} [P,L]
+# Laravel lives in the real /api/ folder on this host.
+# Do NOT proxy /api to Node (127.0.0.1:3000) — that caused 503s.
+RewriteRule ^api(/|$) - [L]
 
+# SPA fallback (React Router)
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
