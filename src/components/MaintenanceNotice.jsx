@@ -3,8 +3,8 @@ import { Clock } from 'lucide-react';
 
 // Set ENABLED to true during a planned outage. Login, admin, and the dashboard then show the card.
 const ENABLED = true;
-const START = new Date('2026-10-09T21:00:00+02:00');
-const END = new Date('2026-10-10T00:00:00+02:00');
+const START = new Date('2026-10-22T18:00:00+02:00');
+const END = new Date('2026-10-22T18:30:00+02:00');
 
 export function isMaintenanceWindow(now = new Date()) {
   if (!ENABLED) return false;
@@ -37,18 +37,18 @@ export function MaintenanceNotice({ force = false }) {
           </div>
           <h1 className="mt-4 text-2xl font-semibold text-[#003500]">System is offline</h1>
           <p className="mt-3 text-sm leading-7 text-gray-600">
-            The system is offline for maintenance until 00:00 tonight, 9 October 2026.
-            Please come back after midnight.
+            The system is offline for maintenance until 18:30, 22 October 2026.
+            Please come back after 18:30.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-3 text-left">
             <div className="rounded-xl bg-[#2f5d31]/10 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6b4423]">Date</p>
-              <p className="mt-1 text-sm font-semibold text-[#003500]">9 October 2026</p>
+              <p className="mt-1 text-sm font-semibold text-[#003500]">22 October 2026</p>
             </div>
             <div className="rounded-xl bg-[#6b4423]/10 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6b4423]">Time</p>
-              <p className="mt-1 text-sm font-semibold text-[#003500]">21:00 – 00:00</p>
+              <p className="mt-1 text-sm font-semibold text-[#003500]">18:00 – 18:30</p>
             </div>
           </div>
 
