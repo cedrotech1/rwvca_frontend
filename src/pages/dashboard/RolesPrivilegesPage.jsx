@@ -18,6 +18,7 @@ import { inputClass, StatusBadge } from '../../components/ui/dataUi';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { canManageRoles } from '../../utils/rwvcaAccess';
+import { toPlainText } from '../../utils/sanitize';
 
 function groupPrivileges(privileges) {
   const groups = new Map();
@@ -293,7 +294,7 @@ export default function RolesPrivilegesPage() {
                   </div>
                   {role.description && (
                     <p className={`mt-0.5 text-[11px] line-clamp-2 ${active ? 'text-white/75' : 'text-gray-500'}`}>
-                      {role.description}
+                      {toPlainText(role.description)}
                     </p>
                   )}
                 </button>
@@ -400,7 +401,7 @@ export default function RolesPrivilegesPage() {
                             <span className="block text-sm font-medium text-gray-900">{item.name}</span>
                             <span className="block text-[11px] font-mono text-gray-400">{item.code}</span>
                             {item.description && (
-                              <span className="block text-xs text-gray-500 mt-0.5">{item.description}</span>
+                              <span className="block text-xs text-gray-500 mt-0.5">{toPlainText(item.description)}</span>
                             )}
                           </span>
                         </label>

@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import api from '../../../services/api';
 import OfficialDocument, { FormRow, SignatureLine, formatDocDate } from './OfficialDocument';
 import { PAYMENT_FIELDS, formatReportPeriod, num, sum } from './membershipReportShared';
+import { toPlainText } from '../../../utils/sanitize';
 
 function money(value) {
   return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -286,7 +287,7 @@ export function MembershipReportDocumentPage() {
           {item.comment && (
             <div className="mb-5">
               <p className="font-bold">Remarks</p>
-              <p className="mt-1 whitespace-pre-wrap border border-dashed border-gray-400 p-2">{item.comment}</p>
+              <p className="mt-1 whitespace-pre-wrap border border-dashed border-gray-400 p-2">{toPlainText(item.comment)}</p>
             </div>
           )}
 

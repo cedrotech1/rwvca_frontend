@@ -7,6 +7,7 @@ import api from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { formatPhpDate, formatPhpDateTime } from './helpers';
 import { formatReportPeriod } from './membershipReportShared';
+import { toPlainText } from '../../../utils/sanitize';
 
 export default function SharedMissedMembershipListPage() {
   const { id } = useParams();
@@ -232,7 +233,7 @@ export default function SharedMissedMembershipListPage() {
               <div key={row.id} className="border-t border-gray-100 py-3">
                 <p className="text-sm font-medium">{row.user?.names || user?.names || 'User'}</p>
                 <p className="mb-1 text-xs text-gray-400">{formatPhpDateTime(row.created_at)}</p>
-                <p className="whitespace-pre-wrap text-sm">{row.comment}</p>
+                <p className="whitespace-pre-wrap text-sm">{toPlainText(row.comment)}</p>
               </div>
             )) : (
               <p className="text-sm text-gray-400">No comments yet. Be the first to comment.</p>

@@ -7,6 +7,7 @@ import { StatusBadge, inputClass } from '../../../components/ui/dataUi';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
 import { canAuthorizeSupply, canManageSupply } from '../../../utils/rwvcaAccess';
+import { toPlainText } from '../../../utils/sanitize';
 
 function useDepartmentsAndUsers() {
   const [departments, setDepartments] = useState([]);
@@ -166,7 +167,7 @@ export function SupplyRequisitionDetailPage() {
                       <td className="py-2 pr-3">{item.item_no}</td>
                       <td className="py-2 pr-3 font-medium">{item.item_name}</td>
                       <td className="py-2 pr-3">{item.quantity}</td>
-                      <td className="py-2 text-gray-600">{item.description || '—'}</td>
+                      <td className="py-2 text-gray-600">{toPlainText(item.description) || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -182,7 +183,7 @@ export function SupplyRequisitionDetailPage() {
                   <li key={log.id} className="flex flex-wrap justify-between gap-2 border-b border-gray-50 pb-2">
                     <span>
                       <span className="font-medium capitalize">{String(log.action || '').replace(/_/g, ' ')}</span>
-                      {log.comment ? ` — ${log.comment}` : ''}
+                      {log.comment ? ` — ${toPlainText(log.comment)}` : ''}
                       <span className="text-gray-400"> · {log.actor?.names || 'System'}</span>
                     </span>
                     <span className="text-xs text-gray-400">{String(log.created_at || '').slice(0, 16).replace('T', ' ')}</span>

@@ -65,7 +65,7 @@ export const ProgramsCmsPage = () => (
     defaults={{ status: 'active', category: 'upcoming' }}
     columns={[
       { key: 'title', label: 'Program Title' },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', format: 'plain', maxLength: 120 },
       { key: 'application_deadline', label: 'Application Deadline', format: 'date' },
       { key: 'category', label: 'Category' },
       { key: 'status', label: 'Status' },
@@ -102,7 +102,7 @@ export const EventsCmsPage = () => (
       { key: 'image', label: 'Image', image: true },
       { key: 'title', label: 'Title' },
       { key: 'date', label: 'Date', format: 'date' },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', format: 'plain', maxLength: 120 },
       { key: 'status', label: 'Status' },
     ]}
     createFields={[
@@ -236,7 +236,7 @@ export const MembershipSetupCmsPage = () => (
     idKey="category_id"
     columns={[
       { key: 'category_name', label: 'Category' },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', format: 'plain', maxLength: 120 },
       { key: 'display_order', label: 'Order' },
     ]}
     createFields={[
@@ -257,7 +257,7 @@ export const MessagesCmsPage = () => (
       { key: 'name', label: 'From' },
       { key: 'email', label: 'Email' },
       { key: 'subject', label: 'Subject' },
-      { key: 'message', label: 'Message' },
+      { key: 'message', label: 'Message', format: 'plain', maxLength: 160 },
       { key: 'created_at', label: 'Date', format: 'datetime' },
       { key: 'status', label: 'Status' },
     ]}

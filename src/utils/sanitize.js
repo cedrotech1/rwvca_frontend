@@ -40,6 +40,12 @@ export function sanitizeHtml(dirty) {
   });
 }
 
+export function looksLikeHtml(value) {
+  const text = String(value ?? '');
+  if (!text || text.length < 3) return false;
+  return /<\/?[a-z][\s\S]*>/i.test(text);
+}
+
 export function toPlainText(value) {
   if (value === undefined || value === null) return '';
   return stripClipboardArtifacts(String(value))
@@ -57,6 +63,14 @@ export function toPlainText(value) {
     .replace(/&#39;/g, "'")
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
+}
+
+/** Compact single-line plain preview for tables/lists. */
+export function toPlainPreview(value, maxLength = 140) {
+  const text = toPlainText(value).replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}…`;
 }
 
 export function isSafeUrl(url) {

@@ -9,6 +9,7 @@ import { exportCsv, inputClass, labelClass, money, PaymentMethodBadge, SheetTabl
 import { DetailPageSkeleton } from '../../../components/ui/Skeleton';
 import { useNotifyPriorityModal } from '../../../components/ui/NotifyPriorityModal';
 import { num, PAYMENT_FIELDS, sum } from './membershipReportShared';
+import { toPlainText } from '../../../utils/sanitize';
 
 function periodLabel(item) {
   const type = String(item.report_type || '').toUpperCase();
@@ -246,7 +247,7 @@ export default function MembershipReportDetailPage() {
               <div key={row.id} className="py-3 border-t border-gray-100">
                 <p className="text-sm font-medium">{row.user?.names || user?.names}</p>
                 <p className="text-xs text-gray-400 mb-1">{formatPhpDateTime(row.created_at)}</p>
-                <p className="text-sm whitespace-pre-wrap">{row.comment}</p>
+                <p className="text-sm whitespace-pre-wrap">{toPlainText(row.comment)}</p>
               </div>
             )) : <p className="text-sm text-gray-400">No comments yet. Be the first to comment!</p>}
           </div>
@@ -307,7 +308,7 @@ export default function MembershipReportDetailPage() {
                 <StatusBadge value={row.status} />
                 <p className="text-sm font-medium mt-1">{row.user?.names}</p>
                 <p className="text-xs text-gray-400">{formatPhpDateTime(row.created_at, true)}</p>
-                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{row.comment}</p>
+                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{toPlainText(row.comment)}</p>
               </div>
             )) : <p className="text-sm text-gray-400">No activity yet</p>}
           </div>

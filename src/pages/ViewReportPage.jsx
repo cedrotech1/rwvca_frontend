@@ -44,7 +44,7 @@ import {
   getReportCellValue,
   exportReportTableToExcel,
 } from '../utils/reportTableUtils';
-import { sanitizeHtml } from '../utils/sanitize';
+import { sanitizeHtml, toPlainText } from '../utils/sanitize';
 import RichHtml from '../components/RichHtml';
 import ReportComments from '../components/ReportComments';
 import { commentService } from '../services/api/commentService';
@@ -395,7 +395,7 @@ export const ViewReportPage = () => {
       <body>
         <div class="header">
           <div class="title">${report.title || 'Report'}</div>
-          <div class="subtitle">${report.description || ''}</div>
+          <div class="subtitle">${toPlainText(report.description || '').replace(/</g, '&lt;')}</div>
         </div>
         
         <div class="metadata">
@@ -500,7 +500,7 @@ REPORT METADATA
 ================
 
 Title: ${report.title || 'Untitled Report'}
-Description: ${report.description || 'No description'}
+Description: ${toPlainText(report.description) || 'No description'}
 Created by: ${report.uploader?.names || 'Unknown'}
 Campus: ${getReportCampusLabel(report)}
 Created Date: ${formatDate(report.createdAt)}

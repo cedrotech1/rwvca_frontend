@@ -408,7 +408,7 @@ export default function DetailPage({
           {comments.map((row) => (
             <div key={row.id} className="border-b border-gray-100 pb-2 last:border-0">
               <p className="text-sm font-medium">{row.user?.names || 'User'} <span className="font-normal text-gray-500">{formatDateTime(row.commented_at || row.created_at)}</span></p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{row.comment_text || row.comment || row.message}</p>
+              <div className="text-sm text-gray-700">{renderRichContent(row.comment_text || row.comment || row.message)}</div>
             </div>
           ))}
         </div>
@@ -420,7 +420,7 @@ export default function DetailPage({
           {(item[repliesKey] || []).map((row) => (
             <div key={row.id} className="border-b border-gray-100 pb-2 last:border-0">
               <p className="text-sm font-medium">{row.sender?.names || 'User'} <span className="font-normal text-gray-500">{formatDateTime(row.created_at)}</span></p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{row.message || row.reply_text}</p>
+              <div className="text-sm text-gray-700">{renderRichContent(row.message || row.reply_text)}</div>
             </div>
           ))}
         </div>
@@ -458,7 +458,7 @@ export default function DetailPage({
               <li key={row.id} className="flex flex-wrap justify-between gap-2 border-b border-gray-100 pb-2 last:border-0">
                 <span>
                   <span className="font-medium">{String(row.status || row.action || '').replace(/_/g, ' ')}</span>
-                  {row.comment ? ` — ${row.comment}` : ''}
+                  {row.comment ? ` — ${toPlainText(row.comment)}` : ''}
                   <span className="text-gray-500"> · {row.changedByUser?.names || row.user?.names || ''}</span>
                 </span>
                 <span className="text-gray-500">{formatDateTime(row.created_at)}</span>

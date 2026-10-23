@@ -24,7 +24,7 @@ export function EdNotesListPage() {
       columns={[
         { key: 'module_type', label: 'Module' },
         { key: 'record_id', label: 'Record' },
-        { key: 'message', label: 'ED Note' },
+        { key: 'message', label: 'ED Note', format: 'plain', maxLength: 140 },
         { key: 'user.names', label: 'From' },
         { key: 'created_at', label: 'Date', format: 'datetime' },
         { key: 'recipients', label: 'Notified', format: 'count' },
@@ -108,7 +108,7 @@ export function EdNoteDetailPage() {
             {(item.replies || []).map((row) => (
               <div key={row.id} className="bg-gray-50 rounded p-3">
                 <p className="text-xs text-gray-500">{row.user?.names}</p>
-                <p>{row.message}</p>
+                <RichHtml html={row.message} className="prose prose-sm max-w-none" empty="" />
               </div>
             ))}
             {!item.replies?.length && <p className="text-sm text-gray-500">No replies yet.</p>}

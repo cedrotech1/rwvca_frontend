@@ -157,7 +157,18 @@ export default function ListPage({
 
   const tableColumns = columns.map((col) => ({
     ...col,
-    render: (row) => (isStatusColumn(col) ? <StatusBadge value={row[col.key]} /> : formatCell(row, col)),
+    render: (row) => {
+      if (isStatusColumn(col)) return <StatusBadge value={row[col.key]} />;
+      const formatted = formatCell(row, col);
+      if (col.format === 'html' || col.format === 'plain' || col.format === 'richtext') {
+        return (
+          <span title={typeof formatted === 'string' && formatted !== '—' ? formatted : undefined} className="block max-w-md text-sm text-gray-600 line-clamp-2">
+            {formatted}
+          </span>
+        );
+      }
+      return formatted;
+    },
   }));
 
   return (

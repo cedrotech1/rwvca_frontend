@@ -1,7 +1,24 @@
+import { looksLikeHtml, toPlainPreview, toPlainText } from '../../utils/sanitize';
+
 export const inputClass =
   'w-full rounded-lg border-0 bg-gray-50 ring-1 ring-inset ring-gray-200 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#2f5d31]';
 
 export const labelClass = 'block text-sm font-medium text-gray-600 mb-1.5';
+
+function displayCellValue(content) {
+  if (content == null || content === '') return content;
+  if (typeof content === 'string' || typeof content === 'number') {
+    const text = String(content);
+    if (!looksLikeHtml(text)) return text;
+    const preview = toPlainPreview(text, 140) || '—';
+    return (
+      <span title={toPlainText(text)} className="block max-w-md text-sm text-gray-600 line-clamp-2">
+        {preview}
+      </span>
+    );
+  }
+  return content;
+}
 
 const STATUS_STYLES = {
   pending: 'bg-amber-50 text-amber-700',
@@ -78,8 +95,10 @@ export function money(value) {
 export function exportCsv(filename, columns, rows) {
   const header = columns.map((col) => `"${String(col.label || col.key).replace(/"/g, '""')}"`).join(',');
   const body = rows.map((row) => columns.map((col) => {
-    const raw = typeof col.value === 'function' ? col.value(row) : row[col.key];
-    return `"${String(raw ?? '').replace(/"/g, '""')}"`;
+    let raw = typeof col.value === 'function' ? col.value(row) : row[col.key];
+    if (raw != null && typeof raw === 'object') raw = '';
+    const text = looksLikeHtml(raw) ? toPlainText(raw) : String(raw ?? '');
+    return `"${text.replace(/"/g, '""')}"`;
   }).join(',')).join('\n');
   const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -126,11 +145,13 @@ export function DataTable({ columns, rows, empty = 'No records', renderActions, 
               <tr key={row.id || row.product_id || index} className={typeof rowClassName === 'function' ? rowClassName(row) : (rowClassName || 'hover:bg-gray-50')}>
                 {columns.map((col) => (
                   <td key={col.key || col.label} className="px-3 py-3">
-                    {typeof col.render === 'function'
-                      ? col.render(row, index)
-                      : typeof col.value === 'function'
-                        ? col.value(row, index)
-                        : row[col.key]}
+                    {displayCellValue(
+                      typeof col.render === 'function'
+                        ? col.render(row, index)
+                        : typeof col.value === 'function'
+                          ? col.value(row, index)
+                          : row[col.key]
+                    )}
                   </td>
                 ))}
                 {renderActions && <td className="px-3 py-3 text-right whitespace-nowrap">{renderActions(row)}</td>}
@@ -194,7 +215,7 @@ export function SheetTable({ title, tone = 'teal', columns, rows, empty, footer,
               <tr key={row.id || index} className={row.total ? 'bg-teal-50 font-semibold' : 'hover:bg-gray-50'}>
                 {columns.map((col) => (
                   <td key={col.key || col.label} className={`px-3 py-2.5 ${col.align === 'right' ? 'text-right tabular-nums' : ''}`}>
-                    {typeof col.render === 'function' ? col.render(row, index) : row[col.key]}
+                    {displayCellValue(typeof col.render === 'function' ? col.render(row, index) : row[col.key])}
                   </td>
                 ))}
               </tr>

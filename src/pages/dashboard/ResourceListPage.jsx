@@ -143,20 +143,37 @@ export default function ResourceListPage({
   };
 
   const rows = useMemo(() => items, [items]);
-  const tableColumns = columns.map((col) => ({
-    ...col,
-    render: (row) => {
-      if (col.image) {
-        return cellValue(row, col.key) !== '—'
-          ? <img src={fileUrl(cellValue(row, col.key), { auth: Boolean(col.private) })} alt="" className="h-12 w-16 object-cover rounded" />
-          : '—';
-      }
-      if (isStatusColumn(col) || col.format === 'active') {
-        return <StatusBadge value={col.format === 'active' ? (Number(row.active) === 1 || row.active === true || Number(row.is_active) === 1 ? 'Active' : 'Inactive') : row[col.key]} />;
-      }
-      return formatCell(row, col);
-    },
-  }));
+  const richtextKeys = useMemo(
+    () => new Set(createFields.filter((field) => field.type === 'richtext').map((field) => field.name)),
+    [createFields]
+  );
+  const tableColumns = columns.map((col) => {
+    const resolvedCol = richtextKeys.has(col.key) && !col.format
+      ? { ...col, format: 'plain', maxLength: col.maxLength || 120 }
+      : col;
+    return {
+      ...resolvedCol,
+      render: (row) => {
+        if (resolvedCol.image) {
+          return cellValue(row, resolvedCol.key) !== '—'
+            ? <img src={fileUrl(cellValue(row, resolvedCol.key), { auth: Boolean(resolvedCol.private) })} alt="" className="h-12 w-16 object-cover rounded" />
+            : '—';
+        }
+        if (isStatusColumn(resolvedCol) || resolvedCol.format === 'active') {
+          return <StatusBadge value={resolvedCol.format === 'active' ? (Number(row.active) === 1 || row.active === true || Number(row.is_active) === 1 ? 'Active' : 'Inactive') : row[resolvedCol.key]} />;
+        }
+        const formatted = formatCell(row, resolvedCol);
+        if (resolvedCol.format === 'plain' || resolvedCol.format === 'richtext' || resolvedCol.format === 'html') {
+          return (
+            <span title={typeof formatted === 'string' && formatted !== '—' ? formatted : undefined} className="block max-w-md text-sm text-gray-600 line-clamp-2">
+              {formatted}
+            </span>
+          );
+        }
+        return formatted;
+      },
+    };
+  });
 
   return (
     <div>

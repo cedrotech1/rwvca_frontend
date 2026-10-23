@@ -184,7 +184,7 @@ export function RequisitionDocumentPage() {
               {padded.map((row, index) => (
                 <tr key={row.id || `empty-${index}`}>
                   <td className="border border-black p-1.5 text-center">{index + 1}</td>
-                  <td className="border border-black p-1.5">{row.empty ? '\u00a0' : row.description}</td>
+                  <td className="border border-black p-1.5">{row.empty ? '\u00a0' : toPlainText(row.description)}</td>
                   <td className="border border-black p-1.5 text-right">{row.empty ? '' : Number(row.quantity).toLocaleString()}</td>
                   <td className="border border-black p-1.5 text-right">{row.empty ? '' : Number(row.unit_price).toLocaleString()}</td>
                   <td className="border border-black p-1.5 text-right">{row.empty ? '' : Number(row.total_amount).toLocaleString()}</td>

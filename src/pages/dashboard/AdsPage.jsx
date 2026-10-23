@@ -13,7 +13,7 @@ export default function AdsPage() {
       columns={[
         { key: 'url', label: 'Image', image: true },
         { key: 'title', label: 'Title' },
-        { key: 'description', label: 'Description' },
+        { key: 'description', label: 'Description', format: 'plain', maxLength: 120 },
         { key: 'status', label: 'Status' },
       ]}
       createFields={[

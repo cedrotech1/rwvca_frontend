@@ -12,6 +12,7 @@ import ReportDetailPage from './ReportDetailPage';
 import api from '../../../services/api';
 import { fileUrl } from '../../../services/api/config';
 import { formatDateTime } from './helpers';
+import { toPlainText } from '../../../utils/sanitize';
 import {
   LeaveBalanceSummary,
   LeaveDirectWorkflowAlert,
@@ -638,7 +639,7 @@ export const LeaveDetailPage = () => (
             return (
               <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                 <p className="font-semibold">Returned for revision</p>
-                <p className="mt-1 whitespace-pre-wrap">{revertLog.comment}</p>
+                <p className="mt-1 whitespace-pre-wrap">{toPlainText(revertLog.comment)}</p>
                 <p className="mt-2 text-xs text-rose-700">
                   {revertLog.changedByUser?.names ? `By ${revertLog.changedByUser.names}` : ''}
                   {revertLog.created_at ? ` · ${formatDateTime(revertLog.created_at)}` : ''}

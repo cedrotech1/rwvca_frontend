@@ -21,6 +21,30 @@ function isInUse(asset) {
   return String(asset.status || '').toLowerCase() === 'issued' || String(asset.location || '').toLowerCase() === 'user';
 }
 
+function parseItemNames(value) {
+  return String(value || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function summarizeItems(row, preview = 3) {
+  const names = parseItemNames(row.item_names);
+  const count = Number(row.item_count) || names.length;
+  if (!count && !names.length) return { count: 0, preview: '—', title: '' };
+  const unique = [...new Set(names)];
+  const shown = unique.slice(0, preview);
+  const more = Math.max(unique.length - shown.length, 0);
+  const previewText = shown.length
+    ? `${shown.join(', ')}${more ? ` +${more} more` : ''}`
+    : `${count} item${count === 1 ? '' : 's'}`;
+  return {
+    count,
+    preview: previewText,
+    title: unique.join(', '),
+  };
+}
+
 async function fetchInventorySummary() {
   try {
     const res = await api.get('/inventory/summary');
@@ -173,7 +197,21 @@ export default function LogisticDashboardPage() {
           empty="No inventory summary"
           columns={[
             { key: 'category', label: 'Category' },
-            { key: 'item_names', label: 'Items' },
+            {
+              key: 'item_names',
+              label: 'Items',
+              value: (row) => {
+                const { count, preview, title } = summarizeItems(row);
+                return (
+                  <span title={title || undefined} className="block max-w-sm">
+                    <span className="font-medium text-gray-800">{count} {count === 1 ? 'item' : 'items'}</span>
+                    {preview !== '—' && (
+                      <span className="mt-0.5 block text-xs text-gray-500 line-clamp-2">{preview}</span>
+                    )}
+                  </span>
+                );
+              },
+            },
             { key: 'total_stock', label: 'Stock' },
             { key: 'low_stock_count', label: 'Low stock' },
           ]}

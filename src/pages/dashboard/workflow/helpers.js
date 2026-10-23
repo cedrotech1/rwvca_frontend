@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../../../services/api';
+import { looksLikeHtml, toPlainPreview } from '../../../utils/sanitize';
+
+const RICH_TEXT_KEYS = new Set([
+  'description', 'content', 'bio', 'message', 'purpose', 'notes', 'requirements',
+  'why_apply', 'comment', 'comment_text', 'reply_text', 'what_to_report', 'whatToReport',
+  'text_report', 'challenge', 'wayForward', 'way_forward',
+]);
 
 export function useStaffOptions() {
   const [departments, setDepartments] = useState([]);
@@ -70,6 +77,18 @@ export function formatMoney(value) {
   return amount.toLocaleString('en-RW', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+export function formatPlainPreview(value, maxLength = 140) {
+  const text = toPlainPreview(value, maxLength);
+  return text || '—';
+}
+
+function shouldPlainPreview(col, raw) {
+  if (col.format === 'plain' || col.format === 'richtext' || col.format === 'html') return true;
+  const key = String(col.key || '').split('.').pop();
+  if (RICH_TEXT_KEYS.has(key)) return true;
+  return looksLikeHtml(raw);
+}
+
 export function formatCell(row, col) {
   if (col.format === 'id') return row.id ? `#${row.id}` : '—';
   if (col.format === 'date') return formatDate(cellValue(row, col.key));
@@ -112,7 +131,13 @@ export function formatCell(row, col) {
     const value = cellValue(row, col.key);
     return value === '—' ? '—' : String(value).replace(/_/g, ' ');
   }
-  return cellValue(row, col.key);
+
+  const raw = row[col.key] ?? cellValue(row, col.key);
+  if (raw === '—' || raw === null || raw === undefined || raw === '') return '—';
+  if (shouldPlainPreview(col, raw)) {
+    return formatPlainPreview(raw, col.maxLength || 140);
+  }
+  return typeof raw === 'string' || typeof raw === 'number' ? String(raw) : cellValue(row, col.key);
 }
 
 export function isStatusColumn(col) {
